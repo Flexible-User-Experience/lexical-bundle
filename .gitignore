@@ -1,0 +1,7 @@
+/vendor/
+composer.lock
+/.phpunit.cache/
+.phpunit.result.cache
+
+# App-only artifact that FrameworkBundle dumps in debug mode; must never live in a bundle.
+/config/reference.php

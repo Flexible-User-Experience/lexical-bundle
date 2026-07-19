@@ -1,0 +1,8 @@
+# Keep the published (dist) package lean: development-only paths are excluded from
+# `composer require` downloads via export-ignore.
+/.github            export-ignore
+/docs              export-ignore
+/tests             export-ignore
+/.gitattributes    export-ignore
+/.gitignore        export-ignore
+/phpunit.dist.xml  export-ignore
