@@ -88,18 +88,29 @@ $builder->add('description', LexicalFormType::class, [
 
 ### Options
 
-| Option    | Type       | Default                                                                             | Description                                   |
-|-----------|------------|-------------------------------------------------------------------------------------|-----------------------------------------------|
-| `toolbar` | `string[]` | `['bold','italic','underline','strikethrough','bullet','number','link','unlink']`   | Ordered toolbar buttons to display.           |
-| `height`  | `string`   | `'200px'`                                                                           | Minimum editable height (any CSS length).     |
+| Option                 | Type       | Default                                                                           | Description                                          |
+|------------------------|------------|-----------------------------------------------------------------------------------|------------------------------------------------------|
+| `toolbar`              | `string[]` | `['bold','italic','underline','strikethrough','bullet','number','link','unlink']` | Ordered toolbar buttons to display.                  |
+| `height`               | `string`   | `'200px'`                                                                         | Minimum editable height (any CSS length).            |
+| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`                                                 | URL schemes the link modal accepts.                  |
 
 Available buttons: `bold`, `italic`, `underline`, `strikethrough`, `bullet`, `number`, `link`,
 `unlink`. The field extends `TextareaType`, so all textarea/text field options (`label`, `required`,
 `attr`, `constraints`, …) apply too.
 
+Restrict (or widen) which link schemes the editor may produce with `allowed_link_schemes` — entries may
+be written with or without the trailing colon, and anything outside the list is rejected in the link
+modal:
+
+```php
+$builder->add('description', LexicalFormType::class, [
+    'allowed_link_schemes' => ['https'], // https-only links
+]);
+```
+
 The editor stores **HTML**. When you render that HTML on a public page, output it as trusted markup
-(e.g. Twig's `|raw`) — links are restricted to the `http`, `https`, `mailto` and `tel` schemes by the
-editor, but you remain responsible for sanitising any HTML that reaches the field from other sources.
+(e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` by the editor, but you remain
+responsible for sanitising any HTML that reaches the field from other sources.
 
 ## How it works
 

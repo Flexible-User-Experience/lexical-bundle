@@ -44,10 +44,11 @@ const THEME = {
 // Toolbar commands handled straight by Lexical's FORMAT_TEXT_COMMAND.
 const TEXT_FORMATS = new Set(['bold', 'italic', 'underline', 'strikethrough']);
 
-// Link schemes the editor is allowed to produce. `javascript:`, `data:` and other
-// script-bearing schemes are rejected so stored HTML that a frontend renders as raw
-// markup cannot carry an XSS payload.
-const SAFE_LINK_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+// Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
+// pass the attribute. Mirrors LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES. Whatever the
+// list, anything outside it — notably `javascript:` and `data:` — is rejected, so stored
+// HTML that a frontend renders as raw markup cannot carry an XSS payload.
+const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
 
 /**
  * Behaviour for FlexibleUx\Form\Type\LexicalFormType. The `lexical_widget` form theme
@@ -59,7 +60,10 @@ const SAFE_LINK_SCHEMES = new Set(['http:', 'https:', 'mailto:', 'tel:']);
  */
 export default class extends Controller {
     static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab'];
-    static values = { invalidUrlMessage: String };
+    static values = {
+        invalidUrlMessage: String,
+        allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
+    };
 
     connect() {
         this.#createEditor();
@@ -129,15 +133,22 @@ export default class extends Controller {
         this.linkSelection = null;
     }
 
-    // A URL is safe when it parses and uses an allowlisted scheme. The URL constructor
-    // normalises the scheme (so HTTPS:// passes) and throws on malformed input, so this
-    // also rejects javascript:/data: and anything that is not a real absolute URL.
+    // A URL is safe when it parses and its scheme is in the configured allowlist (the
+    // `allowed_link_schemes` form option). The URL constructor normalises the scheme (so
+    // HTTPS:// passes) and throws on malformed input, so this also rejects
+    // javascript:/data: and anything that is not a real absolute URL.
     #isSafeUrl(value) {
+        let protocol;
         try {
-            return SAFE_LINK_SCHEMES.has(new URL(value).protocol);
+            protocol = new URL(value).protocol.toLowerCase();
         } catch {
             return false;
         }
+
+        // Entries may be written with or without the trailing colon.
+        return this.allowedLinkSchemesValue.some(
+            (scheme) => `${String(scheme).trim().toLowerCase().replace(/:$/, '')}:` === protocol,
+        );
     }
 
     // Enter in the URL field confirms (there is no form to submit).

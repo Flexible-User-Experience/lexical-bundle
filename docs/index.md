@@ -67,10 +67,22 @@ to a `string`/`text` property like any textarea.
 
 ## Options
 
-| Option    | Type       | Default            | Description                               |
-|-----------|------------|--------------------|-------------------------------------------|
-| `toolbar` | `string[]` | all eight buttons  | Ordered toolbar buttons to display.       |
-| `height`  | `string`   | `'200px'`          | Minimum editable height (any CSS length). |
+| Option                 | Type       | Default                           | Description                               |
+|------------------------|------------|-----------------------------------|-------------------------------------------|
+| `toolbar`              | `string[]` | all eight buttons                 | Ordered toolbar buttons to display.       |
+| `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
+| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
+
+`allowed_link_schemes` entries may be written with or without the trailing colon and in any case
+(`https`, `https:` and `HTTPS:` are equivalent). The list is normalised server-side and handed to the
+Stimulus controller as the `allowedLinkSchemes` value, so validation happens in the link modal before a
+link is inserted:
+
+```php
+$builder->add('description', LexicalFormType::class, [
+    'allowed_link_schemes' => ['https', 'mailto'],
+]);
+```
 
 The button names are `bold`, `italic`, `underline`, `strikethrough`, `bullet`, `number`, `link` and
 `unlink`. Reordering the array reorders the toolbar; the theme inserts a separator whenever the button
@@ -126,8 +138,9 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.cancel`, `dialog.confir
 
 ## Security notes
 
-- The editor only produces links with the `http`, `https`, `mailto` or `tel` scheme; `javascript:` and
-  `data:` URLs are rejected in the link modal.
+- The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
+  `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
+  link modal. Widening the list widens what can be stored, so add schemes deliberately.
 - The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
   sanitise anything that can reach the field from outside this editor.
 
