@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2] - 2026-07-19
+## [0.2.1] - 2026-07-19
+
+### Changed
+
+- The `lexical_widget` form theme now builds its Stimulus wiring with StimulusBundle's
+  `stimulus_controller`, `stimulus_target` and `stimulus_action` Twig helpers instead of
+  hand-written `data-*` attributes. The rendered markup is byte-for-byte unchanged; the helpers
+  take care of the Value API key casing (`invalidUrlMessage` becomes
+  `data-lexical-invalid-url-message-value`) and of JSON-encoding array values such as
+  `allowedLinkSchemes`.
+
+## [0.2.0] - 2026-07-19
 
 ### Added
 
@@ -23,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the previous set as a built-in fallback, so custom form themes that do not pass the value continue
   to work.
 
-## [0.1] - 2026-07-19
+## [0.1.0] - 2026-07-19
 
 ### Added
 
@@ -38,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2...HEAD
-[0.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.1...v0.2
-[0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/releases/tag/v0.1
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Flexible-User-Experience/lexical-bundle/releases/tag/v0.1.0

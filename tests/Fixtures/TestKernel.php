@@ -12,6 +12,7 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 use Symfony\UX\Icons\UXIconsBundle;
+use Symfony\UX\StimulusBundle\StimulusBundle;
 
 /**
  * Minimal application kernel used by the integration test to boot the bundle inside a
@@ -28,6 +29,8 @@ final class TestKernel extends Kernel
         yield new FrameworkBundle();
         yield new TwigBundle();
         yield new UXIconsBundle();
+        // Provides the stimulus_controller/target/action Twig helpers the form theme uses.
+        yield new StimulusBundle();
         yield new FlexibleUxLexicalBundle();
     }
 

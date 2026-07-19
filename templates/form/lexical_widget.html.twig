@@ -3,6 +3,10 @@
     ux_icon) and the editable surface around the real textarea, all bound to the
     `lexical` Stimulus controller. The controller keeps the textarea in sync with the
     editor's HTML; styling ships in assets/styles/lexical.css (loaded by the controller).
+
+    The Stimulus wiring uses StimulusBundle's Twig helpers (`stimulus_controller`,
+    `stimulus_target`, `stimulus_action`) rather than hand-written data-* attributes, so
+    the Value API key casing and the JSON encoding of array values are handled for us.
 #}
 {%- block lexical_widget -%}
     {#- `group` drives the visual separators: a `lexical__sep` is drawn between two
@@ -17,9 +21,11 @@
         link: { icon: 'link', label: 'toolbar.link', group: 'link' },
         unlink: { icon: 'unlink', label: 'toolbar.unlink', group: 'link' },
     } -%}
-    <div class="lexical" data-controller="lexical"
-         data-lexical-invalid-url-message-value="{{ 'error.invalid_url'|trans({}, 'FlexibleUxLexical') }}"
-         data-lexical-allowed-link-schemes-value="{{ lexical_allowed_link_schemes|default([])|json_encode }}"
+    <div class="lexical"
+         {{ stimulus_controller('lexical', {
+             invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
+             allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
+         }) }}
          style="--lexical-min-height: {{ lexical_height|default('200px') }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
             {%- for name in lexical_toolbar|default([]) -%}
@@ -30,40 +36,42 @@
                         <span class="lexical__sep" aria-hidden="true"></span>
                     {%- endif -%}
                     {%- set title = def.label|trans({}, 'FlexibleUxLexical') -%}
+                    {#- `data-command` stays a plain attribute: the controller reads it both from
+                        the event target and while looping over `buttonTargets` in its toolbar
+                        refresh, so keeping it independent of the controller identifier is simpler
+                        than a Stimulus action parameter. -#}
                     <button type="button" class="lexical__btn" data-command="{{ name }}"
                             title="{{ title }}" aria-label="{{ title }}"
-                            data-lexical-target="button"
-                            data-action="mousedown->lexical#preventBlur click->lexical#command">
+                            {{ stimulus_target('lexical', 'button')|stimulus_action('lexical', 'preventBlur', 'mousedown')|stimulus_action('lexical', 'command', 'click') }}>
                         {{- ux_icon('lexical:' ~ def.icon, { 'class': 'lexical__icon' }) -}}
                     </button>
                 {%- endif -%}
             {%- endfor -%}
         </div>
         <div class="lexical__editable" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
-             data-lexical-target="editable" data-action="focusout->lexical#markChanged"></div>
-        {%- set attr = attr|merge({ 'data-lexical-target': 'input' }) -%}
+             {{ stimulus_target('lexical', 'editable')|stimulus_action('lexical', 'markChanged', 'focusout') }}></div>
+        {%- set attr = attr|merge(stimulus_target('lexical', 'input').toArray()) -%}
         {{- block('textarea_widget') -}}
         {#- Native <dialog> link modal. Kept self-contained (plain buttons + Enter to
             confirm) so it never nests or submits the surrounding form. -#}
-        <dialog class="lexical__dialog" data-lexical-target="dialog"
+        <dialog class="lexical__dialog"
                 aria-label="{{ 'dialog.link.title'|trans({}, 'FlexibleUxLexical') }}"
-                data-action="close->lexical#dialogClosed">
+                {{ stimulus_target('lexical', 'dialog')|stimulus_action('lexical', 'dialogClosed', 'close') }}>
             <div class="lexical__dialog-body">
                 <label class="lexical__dialog-label">
                     {{ 'dialog.link.url_label'|trans({}, 'FlexibleUxLexical') }}
-                    <input type="url" class="lexical__dialog-input" placeholder="https://"
-                           data-lexical-target="urlInput" autofocus
-                           data-action="keydown->lexical#dialogKeydown">
+                    <input type="url" class="lexical__dialog-input" placeholder="https://" autofocus
+                           {{ stimulus_target('lexical', 'urlInput')|stimulus_action('lexical', 'dialogKeydown', 'keydown') }}>
                 </label>
                 <label class="lexical__dialog-check">
-                    <input type="checkbox" data-lexical-target="newTab">
+                    <input type="checkbox" {{ stimulus_target('lexical', 'newTab') }}>
                     {{ 'dialog.link.new_tab'|trans({}, 'FlexibleUxLexical') }}
                 </label>
                 <div class="lexical__dialog-actions">
                     <button type="button" class="lexical__dialog-btn"
-                            data-action="lexical#closeDialog">{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
+                            {{ stimulus_action('lexical', 'closeDialog') }}>{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
                     <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
-                            data-action="lexical#confirmLink">{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
+                            {{ stimulus_action('lexical', 'confirmLink') }}>{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
                 </div>
             </div>
         </dialog>
