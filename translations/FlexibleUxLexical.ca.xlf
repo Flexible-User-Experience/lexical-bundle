@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" target-language="ca" datatype="plaintext" original="FlexibleUxLexical">
+        <body>
+            <trans-unit id="toolbar.label">
+                <source>toolbar.label</source>
+                <target>Format de text</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bold">
+                <source>toolbar.bold</source>
+                <target>Negreta</target>
+            </trans-unit>
+            <trans-unit id="toolbar.italic">
+                <source>toolbar.italic</source>
+                <target>Cursiva</target>
+            </trans-unit>
+            <trans-unit id="toolbar.underline">
+                <source>toolbar.underline</source>
+                <target>Subratllat</target>
+            </trans-unit>
+            <trans-unit id="toolbar.strikethrough">
+                <source>toolbar.strikethrough</source>
+                <target>Ratllat</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bullet_list">
+                <source>toolbar.bullet_list</source>
+                <target>Llista amb pics</target>
+            </trans-unit>
+            <trans-unit id="toolbar.numbered_list">
+                <source>toolbar.numbered_list</source>
+                <target>Llista numerada</target>
+            </trans-unit>
+            <trans-unit id="toolbar.link">
+                <source>toolbar.link</source>
+                <target>Insereix un enllaç</target>
+            </trans-unit>
+            <trans-unit id="toolbar.unlink">
+                <source>toolbar.unlink</source>
+                <target>Suprimeix l'enllaç</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.title">
+                <source>dialog.link.title</source>
+                <target>Insereix un enllaç</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.url_label">
+                <source>dialog.link.url_label</source>
+                <target>URL de l'enllaç</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.new_tab">
+                <source>dialog.link.new_tab</source>
+                <target>Obre en una pestanya nova</target>
+            </trans-unit>
+            <trans-unit id="dialog.cancel">
+                <source>dialog.cancel</source>
+                <target>Cancel·la</target>
+            </trans-unit>
+            <trans-unit id="dialog.confirm">
+                <source>dialog.confirm</source>
+                <target>D'acord</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_url">
+                <source>error.invalid_url</source>
+                <target>Introduïu un URL vàlid (http, https, mailto o tel).</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

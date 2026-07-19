@@ -1,0 +1,222 @@
+/* Lexical rich-text editor — FlexibleUx\Form\Type\LexicalFormType.
+   Markup: lexical_widget form theme · Behaviour: assets/src/controller.js
+   This stylesheet is imported by the Stimulus controller, so AssetMapper links it
+   automatically; consumers do not need to include it themselves. */
+
+.lexical {
+    border: 1px solid #d2d6de;
+    background: #fff;
+}
+
+/* Toolbar + editable stay hidden until the controller adds `lexical--ready`, so a
+   JS-less page gracefully degrades to the plain textarea. */
+.lexical__toolbar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+    border-bottom: 1px solid #d2d6de;
+    background: #f7f7f7;
+}
+
+.lexical__editable {
+    display: none;
+    min-height: var(--lexical-min-height, 200px);
+    padding: 8px 12px;
+    outline: none;
+    overflow-y: auto;
+    color: #333;
+    line-height: 1.5;
+}
+
+.lexical--ready .lexical__toolbar {
+    display: flex;
+}
+
+.lexical--ready .lexical__editable {
+    display: block;
+}
+
+.lexical--ready [data-lexical-target="input"] {
+    display: none;
+}
+
+.lexical__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    background: transparent;
+    color: #333;
+    cursor: pointer;
+}
+
+.lexical__btn:not(:disabled):hover {
+    background: #e7e7e7;
+}
+
+.lexical__btn.is-active {
+    background: #3c8dbc;
+    color: #fff;
+    border-color: #367fa9;
+}
+
+.lexical__btn:disabled {
+    cursor: default;
+    opacity: 0.4;
+}
+
+/* Vertical separator grouping the toolbar buttons (text · lists · link). */
+.lexical__sep {
+    align-self: stretch;
+    width: 1px;
+    margin: 2px 3px;
+    background: #d2d6de;
+}
+
+.lexical__icon {
+    width: 16px;
+    height: 16px;
+}
+
+.lexical__p {
+    margin: 0 0 8px;
+}
+
+.lexical__ul,
+.lexical__ol {
+    margin: 0 0 8px 1.5em;
+    padding: 0;
+}
+
+.lexical__ul {
+    list-style: disc;
+}
+
+.lexical__ol {
+    list-style: decimal;
+}
+
+.lexical__li {
+    margin: 2px 0;
+}
+
+.lexical__link {
+    color: #3c8dbc;
+    text-decoration: underline;
+}
+
+.lexical__bold {
+    font-weight: bold;
+}
+
+.lexical__italic {
+    font-style: italic;
+}
+
+.lexical__underline {
+    text-decoration: underline;
+}
+
+.lexical__strikethrough {
+    text-decoration: line-through;
+}
+
+.lexical__underline.lexical__strikethrough {
+    text-decoration: underline line-through;
+}
+
+/* Link modal — a native <dialog> themed to match plain form inputs/buttons, opened
+   from the toolbar's `link` button by the controller. */
+.lexical__dialog {
+    width: 360px;
+    max-width: calc(100vw - 2rem);
+    /* Center the modal explicitly — reinforces the UA `dialog:modal { margin: auto }`
+       against any global `* { margin: 0 }` reset that might leak in. */
+    margin: auto;
+    padding: 0;
+    border: 1px solid #d2d6de;
+    background: #fff;
+    color: #333;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+.lexical__dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.lexical__dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.lexical__dialog-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.lexical__dialog-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.lexical__dialog-check input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+.lexical__dialog-input {
+    padding: 6px 10px;
+    border: 1px solid #d2d6de;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.lexical__dialog-input:focus {
+    border-color: #3c8dbc;
+    outline: none;
+}
+
+.lexical__dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.lexical__dialog-btn {
+    padding: 6px 14px;
+    border: 1px solid #d2d6de;
+    background: #f4f4f4;
+    color: #333;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.lexical__dialog-btn:hover {
+    background: #e7e7e7;
+}
+
+.lexical__dialog-btn--primary {
+    border-color: #367fa9;
+    background: #3c8dbc;
+    color: #fff;
+}
+
+.lexical__dialog-btn--primary:hover {
+    background: #367fa9;
+}

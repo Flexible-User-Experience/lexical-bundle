@@ -1,0 +1,27 @@
+{
+    "name": "@flexible-ux/lexical-bundle",
+    "description": "Lexical rich-text editor form type for Symfony (AssetMapper + Stimulus).",
+    "license": "MIT",
+    "version": "1.0.0",
+    "type": "module",
+    "symfony": {
+        "controllers": {
+            "lexical": {
+                "name": "lexical",
+                "main": "src/controller.js",
+                "fetch": "lazy",
+                "enabled": true
+            }
+        },
+        "importmap": {
+            "@hotwired/stimulus": "^3.0.0",
+            "lexical": "^0.48.0",
+            "@lexical/rich-text": "^0.48.0",
+            "@lexical/html": "^0.48.0",
+            "@lexical/list": "^0.48.0",
+            "@lexical/link": "^0.48.0",
+            "@lexical/history": "^0.48.0",
+            "@lexical/utils": "^0.48.0"
+        }
+    }
+}

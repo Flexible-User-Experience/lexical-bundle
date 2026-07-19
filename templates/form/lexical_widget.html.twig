@@ -1,0 +1,70 @@
+{#
+    Form theme for FlexibleUx\Form\Type\LexicalFormType. Renders the toolbar (icons via
+    ux_icon) and the editable surface around the real textarea, all bound to the
+    `lexical` Stimulus controller. The controller keeps the textarea in sync with the
+    editor's HTML; styling ships in assets/styles/lexical.css (loaded by the controller).
+#}
+{%- block lexical_widget -%}
+    {#- `group` drives the visual separators: a `lexical__sep` is drawn between two
+        consecutive buttons whenever their group changes (text · list · link). -#}
+    {%- set lexical_icons = {
+        bold: { icon: 'bold', label: 'toolbar.bold', group: 'text' },
+        italic: { icon: 'italic', label: 'toolbar.italic', group: 'text' },
+        underline: { icon: 'underline', label: 'toolbar.underline', group: 'text' },
+        strikethrough: { icon: 'strikethrough', label: 'toolbar.strikethrough', group: 'text' },
+        bullet: { icon: 'list', label: 'toolbar.bullet_list', group: 'list' },
+        number: { icon: 'list-ordered', label: 'toolbar.numbered_list', group: 'list' },
+        link: { icon: 'link', label: 'toolbar.link', group: 'link' },
+        unlink: { icon: 'unlink', label: 'toolbar.unlink', group: 'link' },
+    } -%}
+    <div class="lexical" data-controller="lexical"
+         data-lexical-invalid-url-message-value="{{ 'error.invalid_url'|trans({}, 'FlexibleUxLexical') }}"
+         style="--lexical-min-height: {{ lexical_height|default('200px') }};">
+        <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
+            {%- for name in lexical_toolbar|default([]) -%}
+                {%- set def = lexical_icons[name]|default(null) -%}
+                {%- if def is not null -%}
+                    {%- set prev_def = loop.first ? null : lexical_icons[lexical_toolbar[loop.index0 - 1]]|default(null) -%}
+                    {%- if prev_def is not null and prev_def.group != def.group -%}
+                        <span class="lexical__sep" aria-hidden="true"></span>
+                    {%- endif -%}
+                    {%- set title = def.label|trans({}, 'FlexibleUxLexical') -%}
+                    <button type="button" class="lexical__btn" data-command="{{ name }}"
+                            title="{{ title }}" aria-label="{{ title }}"
+                            data-lexical-target="button"
+                            data-action="mousedown->lexical#preventBlur click->lexical#command">
+                        {{- ux_icon('lexical:' ~ def.icon, { 'class': 'lexical__icon' }) -}}
+                    </button>
+                {%- endif -%}
+            {%- endfor -%}
+        </div>
+        <div class="lexical__editable" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
+             data-lexical-target="editable" data-action="focusout->lexical#markChanged"></div>
+        {%- set attr = attr|merge({ 'data-lexical-target': 'input' }) -%}
+        {{- block('textarea_widget') -}}
+        {#- Native <dialog> link modal. Kept self-contained (plain buttons + Enter to
+            confirm) so it never nests or submits the surrounding form. -#}
+        <dialog class="lexical__dialog" data-lexical-target="dialog"
+                aria-label="{{ 'dialog.link.title'|trans({}, 'FlexibleUxLexical') }}"
+                data-action="close->lexical#dialogClosed">
+            <div class="lexical__dialog-body">
+                <label class="lexical__dialog-label">
+                    {{ 'dialog.link.url_label'|trans({}, 'FlexibleUxLexical') }}
+                    <input type="url" class="lexical__dialog-input" placeholder="https://"
+                           data-lexical-target="urlInput" autofocus
+                           data-action="keydown->lexical#dialogKeydown">
+                </label>
+                <label class="lexical__dialog-check">
+                    <input type="checkbox" data-lexical-target="newTab">
+                    {{ 'dialog.link.new_tab'|trans({}, 'FlexibleUxLexical') }}
+                </label>
+                <div class="lexical__dialog-actions">
+                    <button type="button" class="lexical__dialog-btn"
+                            data-action="lexical#closeDialog">{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
+                    <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
+                            data-action="lexical#confirmLink">{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
+                </div>
+            </div>
+        </dialog>
+    </div>
+{%- endblock -%}

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" target-language="en" datatype="plaintext" original="FlexibleUxLexical">
+        <body>
+            <trans-unit id="toolbar.label">
+                <source>toolbar.label</source>
+                <target>Text formatting</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bold">
+                <source>toolbar.bold</source>
+                <target>Bold</target>
+            </trans-unit>
+            <trans-unit id="toolbar.italic">
+                <source>toolbar.italic</source>
+                <target>Italic</target>
+            </trans-unit>
+            <trans-unit id="toolbar.underline">
+                <source>toolbar.underline</source>
+                <target>Underline</target>
+            </trans-unit>
+            <trans-unit id="toolbar.strikethrough">
+                <source>toolbar.strikethrough</source>
+                <target>Strikethrough</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bullet_list">
+                <source>toolbar.bullet_list</source>
+                <target>Bulleted list</target>
+            </trans-unit>
+            <trans-unit id="toolbar.numbered_list">
+                <source>toolbar.numbered_list</source>
+                <target>Numbered list</target>
+            </trans-unit>
+            <trans-unit id="toolbar.link">
+                <source>toolbar.link</source>
+                <target>Insert link</target>
+            </trans-unit>
+            <trans-unit id="toolbar.unlink">
+                <source>toolbar.unlink</source>
+                <target>Remove link</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.title">
+                <source>dialog.link.title</source>
+                <target>Insert link</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.url_label">
+                <source>dialog.link.url_label</source>
+                <target>Link URL</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.new_tab">
+                <source>dialog.link.new_tab</source>
+                <target>Open in a new tab</target>
+            </trans-unit>
+            <trans-unit id="dialog.cancel">
+                <source>dialog.cancel</source>
+                <target>Cancel</target>
+            </trans-unit>
+            <trans-unit id="dialog.confirm">
+                <source>dialog.confirm</source>
+                <target>OK</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_url">
+                <source>error.invalid_url</source>
+                <target>Please enter a valid URL (http, https, mailto or tel).</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

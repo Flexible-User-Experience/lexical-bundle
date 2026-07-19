@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" target-language="es" datatype="plaintext" original="FlexibleUxLexical">
+        <body>
+            <trans-unit id="toolbar.label">
+                <source>toolbar.label</source>
+                <target>Formato de texto</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bold">
+                <source>toolbar.bold</source>
+                <target>Negrita</target>
+            </trans-unit>
+            <trans-unit id="toolbar.italic">
+                <source>toolbar.italic</source>
+                <target>Cursiva</target>
+            </trans-unit>
+            <trans-unit id="toolbar.underline">
+                <source>toolbar.underline</source>
+                <target>Subrayado</target>
+            </trans-unit>
+            <trans-unit id="toolbar.strikethrough">
+                <source>toolbar.strikethrough</source>
+                <target>Tachado</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bullet_list">
+                <source>toolbar.bullet_list</source>
+                <target>Lista con viñetas</target>
+            </trans-unit>
+            <trans-unit id="toolbar.numbered_list">
+                <source>toolbar.numbered_list</source>
+                <target>Lista numerada</target>
+            </trans-unit>
+            <trans-unit id="toolbar.link">
+                <source>toolbar.link</source>
+                <target>Insertar enlace</target>
+            </trans-unit>
+            <trans-unit id="toolbar.unlink">
+                <source>toolbar.unlink</source>
+                <target>Quitar enlace</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.title">
+                <source>dialog.link.title</source>
+                <target>Insertar enlace</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.url_label">
+                <source>dialog.link.url_label</source>
+                <target>URL del enlace</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.new_tab">
+                <source>dialog.link.new_tab</source>
+                <target>Abrir en una pestaña nueva</target>
+            </trans-unit>
+            <trans-unit id="dialog.cancel">
+                <source>dialog.cancel</source>
+                <target>Cancelar</target>
+            </trans-unit>
+            <trans-unit id="dialog.confirm">
+                <source>dialog.confirm</source>
+                <target>Aceptar</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_url">
+                <source>error.invalid_url</source>
+                <target>Introduce una URL válida (http, https, mailto o tel).</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
