@@ -101,5 +101,23 @@ final class BundleIntegrationTest extends KernelTestCase
         // Initial HTML round-trips into the hidden textarea.
         self::assertStringContainsString('<textarea', $html);
         self::assertStringContainsString('Hello', $html);
+
+        // Default link-scheme allowlist reaches the controller.
+        self::assertStringContainsString('data-lexical-allowed-link-schemes-value=', $html);
+        self::assertStringContainsString('["http","https","mailto","tel"]', html_entity_decode($html));
+    }
+
+    public function testAllowedLinkSchemesReachTheStimulusValue(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, ['allowed_link_schemes' => ['https', 'mailto']])
+            ->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertStringContainsString('data-lexical-allowed-link-schemes-value=', $html);
+        self::assertStringContainsString('["https","mailto"]', html_entity_decode($html));
     }
 }

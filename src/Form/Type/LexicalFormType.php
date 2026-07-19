@@ -23,6 +23,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *  - `toolbar`: ordered button names to show. Available buttons: `bold`, `italic`,
  *    `underline`, `strikethrough`, `bullet`, `number`, `link`, `unlink`.
  *  - `height`: minimum editable height as a CSS length. Defaults to `200px`.
+ *  - `allowed_link_schemes`: URL schemes the link modal accepts, written with or without
+ *    the trailing colon. Defaults to `http`, `https`, `mailto` and `tel`; anything outside
+ *    the list (notably `javascript:` and `data:`) is rejected.
  */
 final class LexicalFormType extends AbstractType
 {
@@ -33,20 +36,35 @@ final class LexicalFormType extends AbstractType
      */
     public const DEFAULT_TOOLBAR = ['bold', 'italic', 'underline', 'strikethrough', 'bullet', 'number', 'link', 'unlink'];
 
+    /**
+     * URL schemes the link modal accepts when `allowed_link_schemes` is not overridden.
+     *
+     * @var list<string>
+     */
+    public const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
+
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'toolbar' => self::DEFAULT_TOOLBAR,
             'height' => '200px',
+            'allowed_link_schemes' => self::DEFAULT_ALLOWED_LINK_SCHEMES,
         ]);
         $resolver->setAllowedTypes('toolbar', 'string[]');
         $resolver->setAllowedTypes('height', 'string');
+        $resolver->setAllowedTypes('allowed_link_schemes', 'string[]');
     }
 
     public function buildView(FormView $view, FormInterface $form, array $options): void
     {
         $view->vars['lexical_toolbar'] = array_values($options['toolbar']);
         $view->vars['lexical_height'] = $options['height'];
+        // Normalised here (lowercase, no trailing colon) so the controller can compare
+        // straight against `URL.protocol` and callers may write "https" or "https:".
+        $view->vars['lexical_allowed_link_schemes'] = array_values(array_map(
+            static fn (string $scheme): string => rtrim(strtolower(trim($scheme)), ':'),
+            $options['allowed_link_schemes'],
+        ));
     }
 
     public function getParent(): string

@@ -36,6 +36,43 @@ final class LexicalFormTypeTest extends TypeTestCase
         $this->factory->create(LexicalFormType::class, null, ['toolbar' => [42]]);
     }
 
+    public function testDefaultAllowedLinkSchemes(): void
+    {
+        $view = $this->factory->create(LexicalFormType::class)->createView();
+
+        self::assertSame(
+            LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES,
+            $view->vars['lexical_allowed_link_schemes'],
+        );
+        self::assertSame(['http', 'https', 'mailto', 'tel'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testCustomAllowedLinkSchemesAreNormalised(): void
+    {
+        // Callers may write the scheme with or without the trailing colon, in any case.
+        $view = $this->factory->create(LexicalFormType::class, null, [
+            'allowed_link_schemes' => ['HTTPS:', ' mailto ', 'ftp'],
+        ])->createView();
+
+        self::assertSame(['https', 'mailto', 'ftp'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testAllowedLinkSchemesCanBeNarrowed(): void
+    {
+        $view = $this->factory->create(LexicalFormType::class, null, [
+            'allowed_link_schemes' => ['https'],
+        ])->createView();
+
+        self::assertSame(['https'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testRejectsNonStringAllowedLinkSchemes(): void
+    {
+        $this->expectException(\Symfony\Component\OptionsResolver\Exception\InvalidOptionsException::class);
+
+        $this->factory->create(LexicalFormType::class, null, ['allowed_link_schemes' => [42]]);
+    }
+
     public function testBlockPrefixIsLexical(): void
     {
         // The `lexical_widget` form theme block hangs off this prefix.

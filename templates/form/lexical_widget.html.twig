@@ -19,6 +19,7 @@
     } -%}
     <div class="lexical" data-controller="lexical"
          data-lexical-invalid-url-message-value="{{ 'error.invalid_url'|trans({}, 'FlexibleUxLexical') }}"
+         data-lexical-allowed-link-schemes-value="{{ lexical_allowed_link_schemes|default([])|json_encode }}"
          style="--lexical-min-height: {{ lexical_height|default('200px') }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
             {%- for name in lexical_toolbar|default([]) -%}

@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-07-19
+## [0.2] - 2026-07-19
+
+### Added
+
+- `allowed_link_schemes` option on `FlexibleUx\Form\Type\LexicalFormType`, controlling which URL
+  schemes the link modal will accept. Entries may be written with or without the trailing colon and
+  in any case (`https`, `https:` and `HTTPS:` are equivalent); the normalised list is exposed through
+  `buildView()` and handed to the `lexical` Stimulus controller as its `allowedLinkSchemes` value.
+  It defaults to `http`, `https`, `mailto` and `tel`, so existing usage is unaffected.
+
+### Changed
+
+- The link-scheme allowlist is no longer hardcoded in the Stimulus controller. The controller keeps
+  the previous set as a built-in fallback, so custom form themes that do not pass the value continue
+  to work.
+
+## [0.1] - 2026-07-19
 
 ### Added
 
@@ -22,5 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/flexible-ux/lexical-bundle/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/flexible-ux/lexical-bundle/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2...HEAD
+[0.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.1...v0.2
+[0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/releases/tag/v0.1
