@@ -15,7 +15,7 @@ required — everything runs through AssetMapper's importmap.
 ## Requirements
 
 - PHP 8.2+
-- Symfony 6.4, 7.x or 8.x with AssetMapper, StimulusBundle and UX Icons
+- Symfony 7.4 or 8.x with AssetMapper, StimulusBundle and UX Icons
 
 ## Installation
 
