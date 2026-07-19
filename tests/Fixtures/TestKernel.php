@@ -31,14 +31,25 @@ final class TestKernel extends Kernel
         yield new FlexibleUxLexicalBundle();
     }
 
+    private const TMP_DIR = '/flexible-ux-lexical-bundle';
+
+    /**
+     * Point the project dir at a temp location so nothing (e.g. FrameworkBundle's
+     * debug-mode `config/reference.php` dump) is ever written into the bundle tree.
+     */
+    public function getProjectDir(): string
+    {
+        return sys_get_temp_dir().self::TMP_DIR;
+    }
+
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/flexible-ux-lexical-bundle/cache/'.$this->environment;
+        return sys_get_temp_dir().self::TMP_DIR.'/cache/'.$this->environment;
     }
 
     public function getLogDir(): string
     {
-        return sys_get_temp_dir().'/flexible-ux-lexical-bundle/log';
+        return sys_get_temp_dir().self::TMP_DIR.'/log';
     }
 
     protected function configureContainer(ContainerConfigurator $container): void

@@ -42,16 +42,16 @@ final class BundleIntegrationTest extends KernelTestCase
         );
     }
 
-    public function testFormThemeAndIconSetArePrepended(): void
+    public function testFormThemeIsPrepended(): void
     {
         self::bootKernel();
-        $container = self::getContainer();
 
+        // The `ux_icons` icon set is exercised by testWidgetRendersEditorMarkup (the
+        // rendered `<svg` only resolves when the `lexical` set path is registered).
         self::assertContains(
             '@FlexibleUxLexical/form/lexical_widget.html.twig',
-            $container->getParameter('twig.form.resources'),
+            self::getContainer()->getParameter('twig.form.resources'),
         );
-        self::assertArrayHasKey('lexical', $container->getParameter('ux_icons.icon_sets'));
     }
 
     public function testWidgetRendersEditorMarkup(): void
