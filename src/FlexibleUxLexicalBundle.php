@@ -32,6 +32,20 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        if ($builder->hasExtension('framework')) {
+            // Expose the bundle's `assets/` dir to AssetMapper under the same name the
+            // Stimulus controller is referenced by. Without this, vendored bundle assets
+            // are NOT auto-discovered and the `lexical` controller cannot be resolved
+            // ("Could not find an asset mapper path that points to the lexical controller").
+            $builder->prependExtensionConfig('framework', [
+                'asset_mapper' => [
+                    'paths' => [
+                        $this->getPath().'/assets' => '@flexible-ux/lexical-bundle',
+                    ],
+                ],
+            ]);
+        }
+
         if ($builder->hasExtension('twig')) {
             $builder->prependExtensionConfig('twig', [
                 'form_themes' => ['@FlexibleUxLexical/form/lexical_widget.html.twig'],
