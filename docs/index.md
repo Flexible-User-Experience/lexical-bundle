@@ -118,6 +118,13 @@ twig:
 and start from the shipped template
 (`vendor/flexible-ux/lexical-bundle/templates/form/lexical_widget.html.twig`).
 
+That template wires Stimulus with StimulusBundle's
+[Twig helpers](https://symfony.com/bundles/StimulusBundle/current/index.html#stimulus-twig-helpers)
+— `stimulus_controller()` for the controller and its values, `stimulus_target()` and
+`stimulus_action()` (chained as filters) for the rest — so keep using them in your override rather
+than hand-writing `data-*` attributes: the helpers handle the Value API key casing and JSON-encode
+array values for you.
+
 ### The icons
 
 The toolbar uses `ux_icon('lexical:<name>')`, resolved from the icon set the bundle registers at
