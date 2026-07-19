@@ -21,21 +21,40 @@ required — everything runs through AssetMapper's importmap.
 
 Make sure [Composer is installed](https://getcomposer.org/doc/00-intro.md) globally.
 
-### Applications that use Symfony Flex
-
-```console
-composer require flexible-ux/lexical-bundle
-```
-
-### Applications that don't use Symfony Flex
-
 #### Step 1: Download the bundle
 
 ```console
 composer require flexible-ux/lexical-bundle
 ```
 
-#### Step 2: Enable the bundle
+With **Symfony Flex**, `composer require` already wires the front-end for you: the Lexical packages are
+added to your `importmap.php` (from the bundle's `assets/package.json`) and the Stimulus controller is
+enabled in your `assets/controllers.json`. Skip to step 3.
+
+#### Step 2 (without Flex): wire the front-end manually
+
+Add the Lexical packages to your importmap:
+
+```console
+php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
+```
+
+and enable the Stimulus controller in `assets/controllers.json`:
+
+```json
+{
+    "controllers": {
+        "@flexible-ux/lexical-bundle": {
+            "lexical": { "enabled": true, "fetch": "lazy" }
+        }
+    }
+}
+```
+
+#### Step 3: Enable the bundle
+
+The bundle does not ship a Flex recipe yet, so register it in `config/bundles.php` (Flex and non-Flex
+alike):
 
 ```php
 // config/bundles.php
@@ -45,37 +64,8 @@ return [
 ];
 ```
 
-## Setup
-
-Two steps remain because the bundle ships JavaScript that runs in your app's importmap.
-
-#### Step 3: Add the Lexical packages to your importmap
-
-```console
-php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
-```
-
-(This also pulls in the transitive Lexical packages.)
-
-#### Step 4: Enable the Stimulus controller
-
-Add the controller to your app's `assets/controllers.json`:
-
-```json
-{
-    "controllers": {
-        "@flexible-ux/lexical-bundle": {
-            "lexical": {
-                "enabled": true,
-                "fetch": "lazy"
-            }
-        }
-    }
-}
-```
-
-That's it. The form theme and the toolbar icons are registered automatically by the bundle; the
-editor's CSS is imported by the controller, so there is nothing else to include.
+That's it. The bundle registers its AssetMapper path, the form theme and the toolbar icons
+automatically; the editor's CSS is imported by the controller, so there is nothing else to include.
 
 ## Usage
 

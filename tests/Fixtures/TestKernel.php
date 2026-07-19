@@ -69,11 +69,12 @@ final class TestKernel extends Kernel
             'strict_variables' => true,
         ]);
 
-        // Expose the services the integration test renders with; otherwise the compiler
-        // inlines these private services and the test container can no longer fetch them.
+        // Expose the services the integration test uses; otherwise the compiler inlines
+        // these private services and the test container can no longer fetch them.
         $container->services()
             ->alias('test.form.factory', 'form.factory')->public()
-            ->alias('test.twig', 'twig')->public();
+            ->alias('test.twig', 'twig')->public()
+            ->alias('test.asset_mapper', 'asset_mapper')->public();
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void

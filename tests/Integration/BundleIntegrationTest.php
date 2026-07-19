@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FlexibleUx\Tests\Integration;
 
+use FlexibleUx\FlexibleUxLexicalBundle;
 use FlexibleUx\Form\Type\LexicalFormType;
 use FlexibleUx\Tests\Fixtures\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -52,6 +53,20 @@ final class BundleIntegrationTest extends KernelTestCase
             '@FlexibleUxLexical/form/lexical_widget.html.twig',
             self::getContainer()->getParameter('twig.form.resources'),
         );
+    }
+
+    public function testControllerIsMappedForAssetMapper(): void
+    {
+        self::bootKernel();
+
+        // Regression guard for the `framework.asset_mapper.paths` prepend: without it,
+        // AssetMapper cannot resolve the vendored controller and Stimulus fails with
+        // "Could not find an asset mapper path that points to the lexical controller".
+        $controllerPath = (new FlexibleUxLexicalBundle())->getPath().'/assets/src/controller.js';
+        $asset = self::getContainer()->get('test.asset_mapper')->getAssetFromSourcePath($controllerPath);
+
+        self::assertNotNull($asset, 'The bundle must register its assets/ directory with AssetMapper.');
+        self::assertStringStartsWith('@flexible-ux/lexical-bundle/', $asset->logicalPath);
     }
 
     public function testWidgetRendersEditorMarkup(): void

@@ -18,14 +18,18 @@ Stimulus and UX Icons, and it stores plain HTML.
 
 ## Installation & setup
 
-See the [README](../README.md) for the four install steps. In short:
+See the [README](../README.md) for the full steps. In short:
 
 ```console
 composer require flexible-ux/lexical-bundle
-php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
 ```
 
-then enable the controller in `assets/controllers.json`:
+With Symfony Flex this also adds the Lexical packages to `importmap.php` and enables the `lexical`
+controller in `assets/controllers.json`. Without Flex, do both manually:
+
+```console
+php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
+```
 
 ```json
 {
@@ -37,8 +41,15 @@ then enable the controller in `assets/controllers.json`:
 }
 ```
 
-The bundle auto-registers its form theme and icon set through `prependExtension()`, so no changes to
-`config/packages/twig.yaml` or `config/packages/ux_icons.yaml` are required.
+Then register the bundle in `config/bundles.php` (no Flex recipe is shipped yet):
+
+```php
+FlexibleUx\FlexibleUxLexicalBundle::class => ['all' => true],
+```
+
+The bundle auto-registers its AssetMapper path, its form theme and its icon set through
+`prependExtension()`, so no changes to `config/packages/twig.yaml` or `config/packages/ux_icons.yaml`
+are required.
 
 ## Usage
 
@@ -123,8 +134,12 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.cancel`, `dialog.confir
 ## Troubleshooting
 
 - **The editor doesn't appear / the plain textarea shows.** The Stimulus controller isn't loaded —
-  double-check step 4 (`assets/controllers.json`) and that `{{ importmap('app') }}` is rendered.
+  check that `@flexible-ux/lexical-bundle` → `lexical` is `enabled` in `assets/controllers.json` and
+  that your page renders `{{ importmap('app') }}`.
+- **`Could not find an asset mapper path that points to the lexical controller`.** The bundle isn't
+  registered — make sure `FlexibleUx\FlexibleUxLexicalBundle` is in `config/bundles.php` so its
+  `prependExtension()` can add the AssetMapper path.
 - **`Unable to find an asset ... "lexical"`.** The Lexical packages aren't in your importmap — run the
-  `importmap:require` command from step 3.
+  `importmap:require` command shown in the setup steps.
 - **Icons don't render.** Ensure `symfony/ux-icons` is installed; the bundle registers the `lexical`
   icon set automatically, but the UX Icons Twig function must be available.
