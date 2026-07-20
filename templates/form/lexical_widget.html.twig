@@ -9,22 +9,24 @@
     the Value API key casing and the JSON encoding of array values are handled for us.
 #}
 {%- block lexical_widget -%}
-    {#- `group` drives the visual separators: a `lexical__sep` is drawn between two
-        consecutive buttons whenever their group changes (text · list · link). -#}
+    {#- Button name → icon + translation key. Grouping is NOT decided here: the toolbar is
+        rendered in the exact order given, and a `lexical__sep` divider is drawn wherever
+        the caller placed a separator entry, so applications are free to group as they like. -#}
     {%- set lexical_icons = {
-        bold: { icon: 'bold', label: 'toolbar.bold', group: 'text' },
-        italic: { icon: 'italic', label: 'toolbar.italic', group: 'text' },
-        underline: { icon: 'underline', label: 'toolbar.underline', group: 'text' },
-        strikethrough: { icon: 'strikethrough', label: 'toolbar.strikethrough', group: 'text' },
-        subscript: { icon: 'subscript', label: 'toolbar.subscript', group: 'text' },
-        superscript: { icon: 'superscript', label: 'toolbar.superscript', group: 'text' },
-        bullet: { icon: 'list', label: 'toolbar.bullet_list', group: 'list' },
-        number: { icon: 'list-ordered', label: 'toolbar.numbered_list', group: 'list' },
-        indent: { icon: 'indent-increase', label: 'toolbar.indent', group: 'indent' },
-        outdent: { icon: 'indent-decrease', label: 'toolbar.outdent', group: 'indent' },
-        link: { icon: 'link', label: 'toolbar.link', group: 'link' },
-        unlink: { icon: 'unlink', label: 'toolbar.unlink', group: 'link' },
+        bold: { icon: 'bold', label: 'toolbar.bold' },
+        italic: { icon: 'italic', label: 'toolbar.italic' },
+        underline: { icon: 'underline', label: 'toolbar.underline' },
+        strikethrough: { icon: 'strikethrough', label: 'toolbar.strikethrough' },
+        subscript: { icon: 'subscript', label: 'toolbar.subscript' },
+        superscript: { icon: 'superscript', label: 'toolbar.superscript' },
+        bullet: { icon: 'list', label: 'toolbar.bullet_list' },
+        number: { icon: 'list-ordered', label: 'toolbar.numbered_list' },
+        indent: { icon: 'indent-increase', label: 'toolbar.indent' },
+        outdent: { icon: 'indent-decrease', label: 'toolbar.outdent' },
+        link: { icon: 'link', label: 'toolbar.link' },
+        unlink: { icon: 'unlink', label: 'toolbar.unlink' },
     } -%}
+    {%- set lexical_sep = lexical_separator|default('|') -%}
     <div class="lexical"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
@@ -33,22 +35,22 @@
          style="--lexical-min-height: {{ lexical_height|default('200px') }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
             {%- for name in lexical_toolbar|default([]) -%}
-                {%- set def = lexical_icons[name]|default(null) -%}
-                {%- if def is not null -%}
-                    {%- set prev_def = loop.first ? null : lexical_icons[lexical_toolbar[loop.index0 - 1]]|default(null) -%}
-                    {%- if prev_def is not null and prev_def.group != def.group -%}
-                        <span class="lexical__sep" aria-hidden="true"></span>
+                {%- if name == lexical_sep -%}
+                    <span class="lexical__sep" aria-hidden="true"></span>
+                {%- else -%}
+                    {%- set def = lexical_icons[name]|default(null) -%}
+                    {%- if def is not null -%}
+                        {%- set title = def.label|trans({}, 'FlexibleUxLexical') -%}
+                        {#- `data-command` stays a plain attribute: the controller reads it both from
+                            the event target and while looping over `buttonTargets` in its toolbar
+                            refresh, so keeping it independent of the controller identifier is simpler
+                            than a Stimulus action parameter. -#}
+                        <button type="button" class="lexical__btn" data-command="{{ name }}"
+                                title="{{ title }}" aria-label="{{ title }}"
+                                {{ stimulus_target('lexical', 'button')|stimulus_action('lexical', 'preventBlur', 'mousedown')|stimulus_action('lexical', 'command', 'click') }}>
+                            {{- ux_icon('lexical:' ~ def.icon, { 'class': 'lexical__icon' }) -}}
+                        </button>
                     {%- endif -%}
-                    {%- set title = def.label|trans({}, 'FlexibleUxLexical') -%}
-                    {#- `data-command` stays a plain attribute: the controller reads it both from
-                        the event target and while looping over `buttonTargets` in its toolbar
-                        refresh, so keeping it independent of the controller identifier is simpler
-                        than a Stimulus action parameter. -#}
-                    <button type="button" class="lexical__btn" data-command="{{ name }}"
-                            title="{{ title }}" aria-label="{{ title }}"
-                            {{ stimulus_target('lexical', 'button')|stimulus_action('lexical', 'preventBlur', 'mousedown')|stimulus_action('lexical', 'command', 'click') }}>
-                        {{- ux_icon('lexical:' ~ def.icon, { 'class': 'lexical__icon' }) -}}
-                    </button>
                 {%- endif -%}
             {%- endfor -%}
         </div>

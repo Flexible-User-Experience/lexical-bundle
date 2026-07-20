@@ -2,7 +2,7 @@
     "name": "@flexible-ux/lexical-bundle",
     "description": "Lexical rich-text editor form type for Symfony (AssetMapper + Stimulus).",
     "license": "MIT",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "type": "module",
     "symfony": {
         "controllers": {

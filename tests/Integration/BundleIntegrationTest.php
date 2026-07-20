@@ -117,12 +117,55 @@ final class BundleIntegrationTest extends KernelTestCase
 
         // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
         // when an icon is missing (ignore_not_found defaults to false).
-        foreach (LexicalFormType::DEFAULT_TOOLBAR as $command) {
-            self::assertStringContainsString(\sprintf('data-command="%s"', $command), $html);
+        foreach (LexicalFormType::DEFAULT_TOOLBAR as $entry) {
+            if (LexicalFormType::SEPARATOR === $entry) {
+                continue;
+            }
+            self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
         }
 
-        // Four groups (text · list · indent · link) mean three separators.
+        // The default groups the buttons with three separators (text · list · indent · link).
         self::assertSame(3, substr_count($html, 'lexical__sep'));
+    }
+
+    public function testBundleConfigurationProvidesApplicationWideDefaults(): void
+    {
+        // Stands in for a config/packages/flexible_ux_lexical.yaml in the host application.
+        $kernel = new TestKernel('test', false, [
+            'toolbar' => ['bold', '|', 'link'],
+            'height' => '444px',
+            'allowed_link_schemes' => ['HTTPS:'],
+        ]);
+        $kernel->boot();
+        $factory = $kernel->getContainer()->get('test.form.factory');
+
+        $view = $factory->create(LexicalFormType::class)->createView();
+        self::assertSame(['bold', '|', 'link'], $view->vars['lexical_toolbar']);
+        self::assertSame('444px', $view->vars['lexical_height']);
+        self::assertSame(['https'], $view->vars['lexical_allowed_link_schemes']);
+
+        // Per-field options still override the application-wide defaults.
+        $overridden = $factory->create(LexicalFormType::class, null, ['height' => '99px'])->createView();
+        self::assertSame('99px', $overridden->vars['lexical_height']);
+        self::assertSame(['bold', '|', 'link'], $overridden->vars['lexical_toolbar']);
+
+        $kernel->shutdown();
+    }
+
+    public function testConfiguredToolbarGroupingReachesTheRenderedMarkup(): void
+    {
+        $kernel = new TestKernel('test', false, ['toolbar' => ['bold', 'italic', '|', 'link']]);
+        $kernel->boot();
+        $container = $kernel->getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertSame(1, substr_count($html, 'lexical__sep'));
+        self::assertStringContainsString('data-command="bold"', $html);
+        self::assertStringNotContainsString('data-command="bullet"', $html);
+
+        $kernel->shutdown();
     }
 
     public function testAllowedLinkSchemesReachTheStimulusValue(): void

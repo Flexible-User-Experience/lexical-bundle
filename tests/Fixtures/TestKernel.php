@@ -15,14 +15,29 @@ use Symfony\UX\Icons\UXIconsBundle;
 use Symfony\UX\StimulusBundle\StimulusBundle;
 
 /**
- * Minimal application kernel used by the integration test to boot the bundle inside a
- * real container (FrameworkBundle + TwigBundle + UX Icons + this bundle) and render a
- * form, exercising the `prependExtension()` wiring, the tagged service, the form theme
- * and `ux_icon()` end to end.
+ * Minimal application kernel used by the integration tests to boot the bundle inside a
+ * real container (FrameworkBundle + TwigBundle + UX Icons + StimulusBundle + this bundle)
+ * and render a form, exercising the `prependExtension()` wiring, the tagged service, the
+ * form theme and `ux_icon()` end to end.
+ *
+ * `$bundleConfig` stands in for `config/packages/flexible_ux_lexical.yaml`.
  */
 final class TestKernel extends Kernel
 {
     use MicroKernelTrait;
+
+    private const TMP_DIR = '/flexible-ux-lexical-bundle';
+
+    /**
+     * @param array<string, mixed> $bundleConfig
+     */
+    public function __construct(
+        string $environment = 'test',
+        bool $debug = false,
+        private readonly array $bundleConfig = [],
+    ) {
+        parent::__construct($environment, $debug);
+    }
 
     public function registerBundles(): iterable
     {
@@ -33,8 +48,6 @@ final class TestKernel extends Kernel
         yield new StimulusBundle();
         yield new FlexibleUxLexicalBundle();
     }
-
-    private const TMP_DIR = '/flexible-ux-lexical-bundle';
 
     /**
      * Point the project dir at a temp location so nothing (e.g. FrameworkBundle's
@@ -47,7 +60,15 @@ final class TestKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().self::TMP_DIR.'/cache/'.$this->environment;
+        // Vary by configuration, otherwise kernels booted with different bundle config
+        // would reuse each other's compiled container.
+        return \sprintf(
+            '%s%s/cache/%s-%s',
+            sys_get_temp_dir(),
+            self::TMP_DIR,
+            $this->environment,
+            substr(md5(serialize($this->bundleConfig)), 0, 8),
+        );
     }
 
     public function getLogDir(): string
@@ -71,6 +92,8 @@ final class TestKernel extends Kernel
         $container->extension('twig', [
             'strict_variables' => true,
         ]);
+
+        $container->extension('flexible_ux_lexical', $this->bundleConfig);
 
         // Expose the services the integration test uses; otherwise the compiler inlines
         // these private services and the test container can no longer fetch them.
