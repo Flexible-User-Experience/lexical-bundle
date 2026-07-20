@@ -22,6 +22,22 @@
                 <source>toolbar.strikethrough</source>
                 <target>Ratllat</target>
             </trans-unit>
+            <trans-unit id="toolbar.subscript">
+                <source>toolbar.subscript</source>
+                <target>Subíndex</target>
+            </trans-unit>
+            <trans-unit id="toolbar.superscript">
+                <source>toolbar.superscript</source>
+                <target>Superíndex</target>
+            </trans-unit>
+            <trans-unit id="toolbar.indent">
+                <source>toolbar.indent</source>
+                <target>Augmenta el sagnat</target>
+            </trans-unit>
+            <trans-unit id="toolbar.outdent">
+                <source>toolbar.outdent</source>
+                <target>Redueix el sagnat</target>
+            </trans-unit>
             <trans-unit id="toolbar.bullet_list">
                 <source>toolbar.bullet_list</source>
                 <target>Llista amb pics</target>

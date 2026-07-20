@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all eight buttons                 | Ordered toolbar buttons to display.       |
+| `toolbar`              | `string[]` | all 12 buttons                    | Ordered toolbar buttons to display.       |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -84,9 +84,16 @@ $builder->add('description', LexicalFormType::class, [
 ]);
 ```
 
-The button names are `bold`, `italic`, `underline`, `strikethrough`, `bullet`, `number`, `link` and
-`unlink`. Reordering the array reorders the toolbar; the theme inserts a separator whenever the button
-group changes (text → list → link).
+The button names are `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript`,
+`bullet`, `number`, `indent`, `outdent`, `link` and `unlink`. Reordering the array reorders the
+toolbar; the theme inserts a separator whenever the button group changes
+(text → list → indent → link).
+
+`subscript` and `superscript` are Lexical text formats and toggle like the other text buttons.
+`indent` and `outdent` are one-shot block actions (Lexical's `INDENT_CONTENT_COMMAND` /
+`OUTDENT_CONTENT_COMMAND`), so they never render as "active"; Lexical stores the result as an inline
+`padding-inline-start` on the block, which is why indentation survives into the saved HTML without
+any stylesheet of its own.
 
 ## Architecture
 

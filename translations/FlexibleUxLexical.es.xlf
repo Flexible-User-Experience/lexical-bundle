@@ -22,6 +22,22 @@
                 <source>toolbar.strikethrough</source>
                 <target>Tachado</target>
             </trans-unit>
+            <trans-unit id="toolbar.subscript">
+                <source>toolbar.subscript</source>
+                <target>Subíndice</target>
+            </trans-unit>
+            <trans-unit id="toolbar.superscript">
+                <source>toolbar.superscript</source>
+                <target>Superíndice</target>
+            </trans-unit>
+            <trans-unit id="toolbar.indent">
+                <source>toolbar.indent</source>
+                <target>Aumentar sangría</target>
+            </trans-unit>
+            <trans-unit id="toolbar.outdent">
+                <source>toolbar.outdent</source>
+                <target>Reducir sangría</target>
+            </trans-unit>
             <trans-unit id="toolbar.bullet_list">
                 <source>toolbar.bullet_list</source>
                 <target>Lista con viñetas</target>

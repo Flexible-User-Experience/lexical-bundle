@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Four new toolbar buttons, all available through the `toolbar` option and enabled by default:
+  `subscript` and `superscript` (Lexical text formats, toggling like the other text buttons) and
+  `indent` / `outdent` (Lexical's `INDENT_CONTENT_COMMAND` and `OUTDENT_CONTENT_COMMAND`, one-shot
+  block actions that never render as "active").
+- The matching Lucide icons — `subscript`, `superscript`, `indent-increase` and `indent-decrease` —
+  are bundled with the existing offline icon set, and the labels are translated in English, Spanish
+  and Catalan.
+- A new `indent` toolbar group, so the theme draws a separator between the list and indent buttons
+  (text · list · indent · link).
+
+### Changed
+
+- The toolbar's active-state refresh is now derived from the text-format list instead of a
+  hardcoded set of flags, so future format toggles light up without extra wiring.
+
 ## [0.2.1] - 2026-07-19
 
 ### Changed

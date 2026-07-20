@@ -21,7 +21,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * Options:
  *  - `toolbar`: ordered button names to show. Available buttons: `bold`, `italic`,
- *    `underline`, `strikethrough`, `bullet`, `number`, `link`, `unlink`.
+ *    `underline`, `strikethrough`, `subscript`, `superscript`, `bullet`, `number`,
+ *    `indent`, `outdent`, `link`, `unlink`.
  *  - `height`: minimum editable height as a CSS length. Defaults to `200px`.
  *  - `allowed_link_schemes`: URL schemes the link modal accepts, written with or without
  *    the trailing colon. Defaults to `http`, `https`, `mailto` and `tel`; anything outside
@@ -34,7 +35,12 @@ final class LexicalFormType extends AbstractType
      *
      * @var list<string>
      */
-    public const DEFAULT_TOOLBAR = ['bold', 'italic', 'underline', 'strikethrough', 'bullet', 'number', 'link', 'unlink'];
+    public const DEFAULT_TOOLBAR = [
+        'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+        'bullet', 'number',
+        'indent', 'outdent',
+        'link', 'unlink',
+    ];
 
     /**
      * URL schemes the link modal accepts when `allowed_link_schemes` is not overridden.
