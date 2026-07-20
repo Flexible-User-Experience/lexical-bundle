@@ -88,35 +88,58 @@ $builder->add('description', LexicalFormType::class, [
 
 ### Options
 
-| Option                 | Type       | Default                                                                           | Description                                          |
-|------------------------|------------|-----------------------------------------------------------------------------------|------------------------------------------------------|
-| `toolbar`              | `string[]` | all 12 buttons, in the order listed below                                         | Ordered toolbar buttons to display.                  |
-| `height`               | `string`   | `'200px'`                                                                         | Minimum editable height (any CSS length).            |
-| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`                                                 | URL schemes the link modal accepts.                  |
+| Option                 | Type       | Default                                    | Description                                             |
+|------------------------|------------|--------------------------------------------|---------------------------------------------------------|
+| `toolbar`              | `string[]` | all 12 buttons in four `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
+| `height`               | `string`   | `'200px'`                                  | Minimum editable height (any CSS length).               |
+| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`          | URL schemes the link modal accepts.                     |
 
-Available buttons, grouped as the toolbar renders them (a separator is drawn wherever the group
-changes):
+#### Toolbar and grouping
 
-| Group  | Buttons                                                              |
-|--------|----------------------------------------------------------------------|
-| text   | `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript` |
-| list   | `bullet`, `number`                                                   |
-| indent | `indent`, `outdent`                                                  |
-| link   | `link`, `unlink`                                                     |
+Available buttons:
 
-Pass any subset in any order — e.g. `'toolbar' => ['bold', 'italic', 'link', 'unlink']`. The field
-extends `TextareaType`, so all textarea/text field options (`label`, `required`, `attr`,
+`bold` · `italic` · `underline` · `strikethrough` · `subscript` · `superscript` · `bullet` ·
+`number` · `indent` · `outdent` · `link` · `unlink`
+
+The toolbar renders **exactly the order you give**, and `|` draws a separator — so grouping is
+entirely yours to decide:
+
+```php
+'toolbar' => ['bold', 'italic', '|', 'link', 'unlink'],   // two groups
+'toolbar' => ['bold', 'italic', 'link'],                  // no separators at all
+```
+
+Leading, trailing and repeated separators are dropped, so a list can never render a stray or doubled
+divider. An unknown button name raises a clear `InvalidOptionsException` listing the valid ones.
+
+The field extends `TextareaType`, so all textarea/text field options (`label`, `required`, `attr`,
 `constraints`, …) apply too.
 
-Restrict (or widen) which link schemes the editor may produce with `allowed_link_schemes` — entries may
-be written with or without the trailing colon, and anything outside the list is rejected in the link
-modal:
+#### Link schemes
+
+Restrict (or widen) which link schemes the editor may produce — entries may be written with or without
+the trailing colon, and anything outside the list is rejected in the link modal:
 
 ```php
 $builder->add('description', LexicalFormType::class, [
     'allowed_link_schemes' => ['https'], // https-only links
 ]);
 ```
+
+### Application-wide defaults
+
+Rather than repeating options at every call site, set defaults once. Every key mirrors a form option,
+and per-field options still win:
+
+```yaml
+# config/packages/flexible_ux_lexical.yaml
+flexible_ux_lexical:
+    toolbar: ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink']
+    height: '320px'
+    allowed_link_schemes: ['https']
+```
+
+Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 
 The editor stores **HTML**. When you render that HTML on a public page, output it as trusted markup
 (e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` by the editor, but you remain

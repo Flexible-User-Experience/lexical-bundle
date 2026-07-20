@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-20
+
+### Added
+
+- Bundle configuration, so `toolbar`, `height` and `allowed_link_schemes` can be defaulted once for
+  the whole application in `config/packages/flexible_ux_lexical.yaml` instead of being repeated at
+  every call site. The values are bound to `flexible_ux_lexical.*` container parameters and injected
+  into the form type; per-field options still take precedence. Until now any key under
+  `flexible_ux_lexical` failed with `Unrecognized option`.
+- `LexicalFormType::SEPARATOR` (`|`) as a toolbar entry, and `LexicalFormType::AVAILABLE_BUTTONS`
+  listing every button the form theme can render.
+
+### Changed
+
+- **Toolbar grouping is now decided by the caller.** Separators used to be derived from a hardcoded
+  button-to-group map inside the form theme, which meant a custom `toolbar` had no say in them. The
+  toolbar now renders entries in exactly the order given and draws a divider wherever a `|` entry
+  appears. `DEFAULT_TOOLBAR` embeds the previous four groups, so the out-of-the-box appearance is
+  unchanged — but **a custom `toolbar` no longer gets automatic separators**: add `'|'` entries where
+  you want them.
+- Redundant separators (leading, trailing or repeated) are dropped when the option is normalised, so
+  a hand-written list cannot render a stray or doubled divider.
+- An unknown toolbar entry now raises an `InvalidOptionsException` naming it and listing the valid
+  buttons, instead of being silently skipped by the template.
+- `allowed_link_schemes` normalisation moved out of `buildView()` into an option normaliser, so the
+  resolved option value is already normalised.
+
 ## [0.3.0] - 2026-07-20
 
 ### Added
@@ -68,7 +95,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.1.0...v0.2.0

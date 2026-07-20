@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FlexibleUx;
 
+use FlexibleUx\Form\Type\LexicalFormType;
+use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
@@ -25,8 +27,41 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  */
 final class FlexibleUxLexicalBundle extends AbstractBundle
 {
+    /**
+     * Application-wide defaults, set in `config/packages/flexible_ux_lexical.yaml`. Every
+     * key mirrors a `LexicalFormType` option, and per-field options still take precedence.
+     */
+    public function configure(DefinitionConfigurator $definition): void
+    {
+        $definition->rootNode()
+            ->children()
+                ->arrayNode('toolbar')
+                    ->info(\sprintf(
+                        'Ordered toolbar entries. Available buttons: "%s". Use "%s" to draw a separator.',
+                        implode('", "', LexicalFormType::AVAILABLE_BUTTONS),
+                        LexicalFormType::SEPARATOR,
+                    ))
+                    ->scalarPrototype()->end()
+                    ->defaultValue(LexicalFormType::DEFAULT_TOOLBAR)
+                ->end()
+                ->scalarNode('height')
+                    ->info('Minimum editable height, as a CSS length.')
+                    ->defaultValue(LexicalFormType::DEFAULT_HEIGHT)
+                ->end()
+                ->arrayNode('allowed_link_schemes')
+                    ->info('URL schemes the link modal accepts, with or without the trailing colon.')
+                    ->scalarPrototype()->end()
+                    ->defaultValue(LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES)
+                ->end()
+            ->end();
+    }
+
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        $builder->setParameter('flexible_ux_lexical.toolbar', $config['toolbar']);
+        $builder->setParameter('flexible_ux_lexical.height', $config['height']);
+        $builder->setParameter('flexible_ux_lexical.allowed_link_schemes', $config['allowed_link_schemes']);
+
         $container->import('../config/services.php');
     }
 

@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 12 buttons                    | Ordered toolbar buttons to display.       |
+| `toolbar`              | `string[]` | all 12 buttons, in four groups    | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -85,9 +85,37 @@ $builder->add('description', LexicalFormType::class, [
 ```
 
 The button names are `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript`,
-`bullet`, `number`, `indent`, `outdent`, `link` and `unlink`. Reordering the array reorders the
-toolbar; the theme inserts a separator whenever the button group changes
-(text → list → indent → link).
+`bullet`, `number`, `indent`, `outdent`, `link` and `unlink`.
+
+### Grouping the toolbar
+
+Grouping is **not** fixed by the bundle. The toolbar renders the entries in exactly the order given,
+and the special entry `|` (`LexicalFormType::SEPARATOR`) draws a divider wherever you place one:
+
+```php
+'toolbar' => ['bold', 'italic', '|', 'bullet', 'number', '|', 'link'],
+'toolbar' => ['bold', 'link'],   // no separators at all
+```
+
+Redundant separators — leading, trailing or repeated — are dropped during option normalisation, so a
+hand-written list can never render a stray or doubled divider. An entry that is neither a known button
+nor `|` raises an `InvalidOptionsException` naming the offending entry and listing the valid buttons.
+
+## Application-wide defaults
+
+All three options can be defaulted once for the whole application. Per-field options still win:
+
+```yaml
+# config/packages/flexible_ux_lexical.yaml
+flexible_ux_lexical:
+    toolbar: ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink']
+    height: '320px'
+    allowed_link_schemes: ['https']
+```
+
+The values are bound to the `flexible_ux_lexical.toolbar`, `.height` and `.allowed_link_schemes`
+container parameters and injected into the form type, so `config:dump-reference flexible_ux_lexical`
+documents them and an unknown key fails at container compile time.
 
 `subscript` and `superscript` are Lexical text formats and toggle like the other text buttons.
 `indent` and `outdent` are one-shot block actions (Lexical's `INDENT_CONTENT_COMMAND` /
