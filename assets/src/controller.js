@@ -10,6 +10,8 @@ import {
     $insertNodes,
     $createParagraphNode,
     FORMAT_TEXT_COMMAND,
+    INDENT_CONTENT_COMMAND,
+    OUTDENT_CONTENT_COMMAND,
     SELECTION_CHANGE_COMMAND,
     COMMAND_PRIORITY_LOW,
 } from 'lexical';
@@ -36,13 +38,23 @@ const THEME = {
         italic: 'lexical__italic',
         underline: 'lexical__underline',
         strikethrough: 'lexical__strikethrough',
+        subscript: 'lexical__subscript',
+        superscript: 'lexical__superscript',
     },
     list: { ul: 'lexical__ul', ol: 'lexical__ol', listitem: 'lexical__li' },
     link: 'lexical__link',
 };
 
-// Toolbar commands handled straight by Lexical's FORMAT_TEXT_COMMAND.
-const TEXT_FORMATS = new Set(['bold', 'italic', 'underline', 'strikethrough']);
+// Toolbar commands handled straight by Lexical's FORMAT_TEXT_COMMAND. These are the
+// toggles whose pressed state the toolbar reflects.
+const TEXT_FORMATS = new Set(['bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript']);
+
+// Block-indentation commands, handled by rich text. Unlike TEXT_FORMATS these are
+// one-shot actions, so they never light up as "active".
+const INDENT_COMMANDS = {
+    indent: INDENT_CONTENT_COMMAND,
+    outdent: OUTDENT_CONTENT_COMMAND,
+};
 
 // Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
 // pass the attribute. Mirrors LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES. Whatever the
@@ -93,6 +105,8 @@ export default class extends Controller {
         const command = event.currentTarget.dataset.command;
         if (TEXT_FORMATS.has(command)) {
             this.editor.dispatchCommand(FORMAT_TEXT_COMMAND, command);
+        } else if (command in INDENT_COMMANDS) {
+            this.editor.dispatchCommand(INDENT_COMMANDS[command], undefined);
         } else if ('bullet' === command || 'number' === command) {
             this.#toggleList(command);
         } else if ('link' === command) {
@@ -297,23 +311,16 @@ export default class extends Controller {
     }
 
     #refreshToolbar(editorState) {
-        const state = {
-            bold: false,
-            italic: false,
-            underline: false,
-            strikethrough: false,
-            listType: null,
-            link: false,
-        };
+        const state = { formats: {}, listType: null, link: false };
         editorState.read(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) {
                 return;
             }
-            state.bold = selection.hasFormat('bold');
-            state.italic = selection.hasFormat('italic');
-            state.underline = selection.hasFormat('underline');
-            state.strikethrough = selection.hasFormat('strikethrough');
+            // Derived from TEXT_FORMATS so new toggles light up without extra wiring.
+            TEXT_FORMATS.forEach((format) => {
+                state.formats[format] = selection.hasFormat(format);
+            });
             state.listType = this.#readListType();
             state.link = null !== this.#linkNode();
         });
@@ -322,7 +329,7 @@ export default class extends Controller {
             const command = button.dataset.command;
             let active = false;
             if (TEXT_FORMATS.has(command)) {
-                active = state[command];
+                active = state.formats[command] ?? false;
             } else if ('bullet' === command || 'number' === command) {
                 active = state.listType === command;
             } else if ('link' === command) {

@@ -15,6 +15,12 @@ final class LexicalFormTypeTest extends TypeTestCase
         $view = $this->factory->create(LexicalFormType::class)->createView();
 
         self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $view->vars['lexical_toolbar']);
+        self::assertSame([
+            'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+            'bullet', 'number',
+            'indent', 'outdent',
+            'link', 'unlink',
+        ], $view->vars['lexical_toolbar']);
         self::assertSame('200px', $view->vars['lexical_height']);
     }
 

@@ -107,6 +107,24 @@ final class BundleIntegrationTest extends KernelTestCase
         self::assertStringContainsString('["http","https","mailto","tel"]', html_entity_decode($html));
     }
 
+    public function testDefaultToolbarRendersEveryButton(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
+        // when an icon is missing (ignore_not_found defaults to false).
+        foreach (LexicalFormType::DEFAULT_TOOLBAR as $command) {
+            self::assertStringContainsString(\sprintf('data-command="%s"', $command), $html);
+        }
+
+        // Four groups (text · list · indent · link) mean three separators.
+        self::assertSame(3, substr_count($html, 'lexical__sep'));
+    }
+
     public function testAllowedLinkSchemesReachTheStimulusValue(): void
     {
         self::bootKernel();

@@ -130,6 +130,18 @@
     text-decoration: underline line-through;
 }
 
+/* Block indentation is emitted by Lexical as an inline `padding-inline-start`, so it
+   needs no rule here — these two only cover the sub/superscript text formats. */
+.lexical__subscript {
+    vertical-align: sub;
+    font-size: 0.8em;
+}
+
+.lexical__superscript {
+    vertical-align: super;
+    font-size: 0.8em;
+}
+
 /* Link modal — a native <dialog> themed to match plain form inputs/buttons, opened
    from the toolbar's `link` button by the controller. */
 .lexical__dialog {

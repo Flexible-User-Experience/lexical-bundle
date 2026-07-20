@@ -90,13 +90,23 @@ $builder->add('description', LexicalFormType::class, [
 
 | Option                 | Type       | Default                                                                           | Description                                          |
 |------------------------|------------|-----------------------------------------------------------------------------------|------------------------------------------------------|
-| `toolbar`              | `string[]` | `['bold','italic','underline','strikethrough','bullet','number','link','unlink']` | Ordered toolbar buttons to display.                  |
+| `toolbar`              | `string[]` | all 12 buttons, in the order listed below                                         | Ordered toolbar buttons to display.                  |
 | `height`               | `string`   | `'200px'`                                                                         | Minimum editable height (any CSS length).            |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`                                                 | URL schemes the link modal accepts.                  |
 
-Available buttons: `bold`, `italic`, `underline`, `strikethrough`, `bullet`, `number`, `link`,
-`unlink`. The field extends `TextareaType`, so all textarea/text field options (`label`, `required`,
-`attr`, `constraints`, …) apply too.
+Available buttons, grouped as the toolbar renders them (a separator is drawn wherever the group
+changes):
+
+| Group  | Buttons                                                              |
+|--------|----------------------------------------------------------------------|
+| text   | `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript` |
+| list   | `bullet`, `number`                                                   |
+| indent | `indent`, `outdent`                                                  |
+| link   | `link`, `unlink`                                                     |
+
+Pass any subset in any order — e.g. `'toolbar' => ['bold', 'italic', 'link', 'unlink']`. The field
+extends `TextareaType`, so all textarea/text field options (`label`, `required`, `attr`,
+`constraints`, …) apply too.
 
 Restrict (or widen) which link schemes the editor may produce with `allowed_link_schemes` — entries may
 be written with or without the trailing colon, and anything outside the list is rejected in the link
