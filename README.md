@@ -13,6 +13,8 @@ textarea's HTML on load and writes HTML back on every change, so it is a drop-in
 plain textarea and **degrades to that textarea when JavaScript is disabled**. No build step is
 required — everything runs through AssetMapper's importmap.
 
+![The rendered LexicalFormType field: the toolbar (text formats, alignment, lists, indentation, link and source-code buttons) above the editable surface](docs/screenshot.png)
+
 ## Requirements
 
 - PHP 8.2+
