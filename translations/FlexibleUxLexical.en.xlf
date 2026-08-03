@@ -30,6 +30,22 @@
                 <source>toolbar.superscript</source>
                 <target>Superscript</target>
             </trans-unit>
+            <trans-unit id="toolbar.align_left">
+                <source>toolbar.align_left</source>
+                <target>Align left</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_center">
+                <source>toolbar.align_center</source>
+                <target>Align center</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_right">
+                <source>toolbar.align_right</source>
+                <target>Align right</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_justify">
+                <source>toolbar.align_justify</source>
+                <target>Justify</target>
+            </trans-unit>
             <trans-unit id="toolbar.indent">
                 <source>toolbar.indent</source>
                 <target>Increase indent</target>

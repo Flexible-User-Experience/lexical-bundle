@@ -6,8 +6,9 @@ form field built on Meta's [Lexical](https://lexical.dev), wired for
 [Stimulus](https://symfony.com/bundles/StimulusBundle) and
 [UX Icons](https://symfony.com/bundles/ux-icons).
 
-The field renders a toolbar (bold, italic, underline, strikethrough, bulleted / numbered lists,
-link, unlink) and a contenteditable surface around a hidden `<textarea>`. The editor reads the
+The field renders a toolbar (bold, italic, underline, strikethrough, subscript / superscript,
+text alignment, bulleted / numbered lists, indentation, link, unlink) and a contenteditable
+surface around a hidden `<textarea>`. The editor reads the
 textarea's HTML on load and writes HTML back on every change, so it is a drop-in replacement for a
 plain textarea and **degrades to that textarea when JavaScript is disabled**. No build step is
 required — everything runs through AssetMapper's importmap.
@@ -90,7 +91,7 @@ $builder->add('description', LexicalFormType::class, [
 
 | Option                 | Type       | Default                                    | Description                                             |
 |------------------------|------------|--------------------------------------------|---------------------------------------------------------|
-| `toolbar`              | `string[]` | all 12 buttons in four `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 16 buttons in five `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                                  | Minimum editable height (any CSS length).               |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`          | URL schemes the link modal accepts.                     |
 
@@ -98,8 +99,9 @@ $builder->add('description', LexicalFormType::class, [
 
 Available buttons:
 
-`bold` · `italic` · `underline` · `strikethrough` · `subscript` · `superscript` · `bullet` ·
-`number` · `indent` · `outdent` · `link` · `unlink`
+`bold` · `italic` · `underline` · `strikethrough` · `subscript` · `superscript` · `align-left` ·
+`align-center` · `align-right` · `align-justify` · `bullet` · `number` · `indent` · `outdent` ·
+`link` · `unlink`
 
 The toolbar renders **exactly the order you give**, and `|` draws a separator — so grouping is
 entirely yours to decide:

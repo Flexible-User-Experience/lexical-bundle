@@ -7,9 +7,11 @@ import {
     $getSelection,
     $setSelection,
     $isRangeSelection,
+    $isElementNode,
     $insertNodes,
     $createParagraphNode,
     FORMAT_TEXT_COMMAND,
+    FORMAT_ELEMENT_COMMAND,
     INDENT_CONTENT_COMMAND,
     OUTDENT_CONTENT_COMMAND,
     SELECTION_CHANGE_COMMAND,
@@ -54,6 +56,16 @@ const TEXT_FORMATS = new Set(['bold', 'italic', 'underline', 'strikethrough', 's
 const INDENT_COMMANDS = {
     indent: INDENT_CONTENT_COMMAND,
     outdent: OUTDENT_CONTENT_COMMAND,
+};
+
+// Toolbar command → Lexical element format. Dispatched through FORMAT_ELEMENT_COMMAND
+// (handled by rich text) and reflected radio-style: the button matching the current
+// block's format lights up, none when the block still has the default ('') format.
+const ALIGN_FORMATS = {
+    'align-left': 'left',
+    'align-center': 'center',
+    'align-right': 'right',
+    'align-justify': 'justify',
 };
 
 // Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
@@ -105,6 +117,8 @@ export default class extends Controller {
         const command = event.currentTarget.dataset.command;
         if (TEXT_FORMATS.has(command)) {
             this.editor.dispatchCommand(FORMAT_TEXT_COMMAND, command);
+        } else if (command in ALIGN_FORMATS) {
+            this.editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, ALIGN_FORMATS[command]);
         } else if (command in INDENT_COMMANDS) {
             this.editor.dispatchCommand(INDENT_COMMANDS[command], undefined);
         } else if ('bullet' === command || 'number' === command) {
@@ -311,7 +325,7 @@ export default class extends Controller {
     }
 
     #refreshToolbar(editorState) {
-        const state = { formats: {}, listType: null, link: false };
+        const state = { formats: {}, align: null, listType: null, link: false };
         editorState.read(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) {
@@ -321,6 +335,7 @@ export default class extends Controller {
             TEXT_FORMATS.forEach((format) => {
                 state.formats[format] = selection.hasFormat(format);
             });
+            state.align = this.#readAlignment();
             state.listType = this.#readListType();
             state.link = null !== this.#linkNode();
         });
@@ -330,6 +345,8 @@ export default class extends Controller {
             let active = false;
             if (TEXT_FORMATS.has(command)) {
                 active = state.formats[command] ?? false;
+            } else if (command in ALIGN_FORMATS) {
+                active = state.align === ALIGN_FORMATS[command];
             } else if ('bullet' === command || 'number' === command) {
                 active = state.listType === command;
             } else if ('link' === command) {
@@ -343,6 +360,22 @@ export default class extends Controller {
     }
 
     // Read helpers — must run inside an editorState.read()/update() scope.
+
+    // Alignment of the block at the caret — the same nearest non-inline element that
+    // FORMAT_ELEMENT_COMMAND targets. Returns null for the default ('') format, so no
+    // alignment button claims to be active until one is applied.
+    #readAlignment() {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) {
+            return null;
+        }
+        const block = $findMatchingParent(
+            selection.anchor.getNode(),
+            (node) => $isElementNode(node) && !node.isInline(),
+        );
+
+        return (block && block.getFormatType()) || null;
+    }
 
     #readListType() {
         const selection = $getSelection();

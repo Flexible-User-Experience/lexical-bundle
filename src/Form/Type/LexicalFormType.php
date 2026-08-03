@@ -53,6 +53,7 @@ final class LexicalFormType extends AbstractType
      */
     public const AVAILABLE_BUTTONS = [
         'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+        'align-left', 'align-center', 'align-right', 'align-justify',
         'bullet', 'number',
         'indent', 'outdent',
         'link', 'unlink',
@@ -65,6 +66,8 @@ final class LexicalFormType extends AbstractType
      */
     public const DEFAULT_TOOLBAR = [
         'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+        self::SEPARATOR,
+        'align-left', 'align-center', 'align-right', 'align-justify',
         self::SEPARATOR,
         'bullet', 'number',
         self::SEPARATOR,

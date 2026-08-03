@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 12 buttons, in four groups    | Ordered entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 16 buttons, in five groups    | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -85,7 +85,8 @@ $builder->add('description', LexicalFormType::class, [
 ```
 
 The button names are `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript`,
-`bullet`, `number`, `indent`, `outdent`, `link` and `unlink`.
+`align-left`, `align-center`, `align-right`, `align-justify`, `bullet`, `number`, `indent`,
+`outdent`, `link` and `unlink`.
 
 ### Grouping the toolbar
 
@@ -122,6 +123,12 @@ documents them and an unknown key fails at container compile time.
 `OUTDENT_CONTENT_COMMAND`), so they never render as "active"; Lexical stores the result as an inline
 `padding-inline-start` on the block, which is why indentation survives into the saved HTML without
 any stylesheet of its own.
+
+The four `align-*` buttons dispatch Lexical's `FORMAT_ELEMENT_COMMAND` on the block at the caret and
+behave radio-style: the button matching the block's current alignment renders as "active", and none
+does while the block keeps the default (`''`) alignment. Like indentation, the result is stored as an
+inline style (`text-align`) on the block, so it survives into the saved HTML and needs no CSS from
+the bundle.
 
 ## Architecture
 

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Four text-alignment toolbar buttons — `align-left`, `align-center`, `align-right` and
+  `align-justify` — available through the `toolbar` option and enabled by default as a new group
+  between the text formats and the lists. They dispatch Lexical's `FORMAT_ELEMENT_COMMAND`, and the
+  button matching the current block's alignment lights up radio-style (none while the block keeps
+  the default alignment). Lexical stores the result as an inline `text-align` on the block, so the
+  alignment survives into the saved HTML with no extra CSS.
+- The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
+  are bundled with the existing offline icon set, and the labels are translated in English, Spanish
+  and Catalan.
+
 ## [0.4.0] - 2026-07-20
 
 ### Added

@@ -18,6 +18,8 @@ final class LexicalFormTypeTest extends TypeTestCase
         self::assertSame([
             'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
             '|',
+            'align-left', 'align-center', 'align-right', 'align-justify',
+            '|',
             'bullet', 'number',
             '|',
             'indent', 'outdent',
