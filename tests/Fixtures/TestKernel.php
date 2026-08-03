@@ -91,6 +91,9 @@ final class TestKernel extends Kernel
 
         $container->extension('twig', [
             'strict_variables' => true,
+            // The kernel runs with debug=false, which would freeze compiled templates in
+            // the (persistent) tmp cache dir — recompile when a template changes instead.
+            'auto_reload' => true,
         ]);
 
         $container->extension('flexible_ux_lexical', $this->bundleConfig);

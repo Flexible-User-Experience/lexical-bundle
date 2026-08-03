@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 16 buttons, in five groups    | Ordered entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 17 buttons, in six groups     | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -86,7 +86,7 @@ $builder->add('description', LexicalFormType::class, [
 
 The button names are `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript`,
 `align-left`, `align-center`, `align-right`, `align-justify`, `bullet`, `number`, `indent`,
-`outdent`, `link` and `unlink`.
+`outdent`, `link`, `unlink` and `source`.
 
 ### Grouping the toolbar
 
@@ -135,6 +135,12 @@ through the bundle configuration) that lists no `align-*` entries renders no ali
 the four entries can also be cherry-picked individually. An editor without the buttons still
 **preserves** any `text-align` already present in the stored (or pasted) HTML when the content is
 edited; opting out only removes the ability to change alignment from the toolbar.
+
+The `source` button opens a modal where the document can be edited as plain-text HTML. Confirming
+re-imports the markup through Lexical's model, so only markup the editor can represent survives —
+anything else is normalised away — and the whole swap lands as a single undoable history step.
+Links entered this way are checked against the same `allowed_link_schemes` allowlist as the link
+modal: a link whose scheme is not allowed is unwrapped (its text stays, the link is dropped).
 
 ## Architecture
 
@@ -195,7 +201,8 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.cancel`, `dialog.confir
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
   `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
-  link modal. Widening the list widens what can be stored, so add schemes deliberately.
+  link modal, and a link imported through the `source` modal is unwrapped when its scheme is not in
+  the list. Widening the list widens what can be stored, so add schemes deliberately.
 - The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
   sanitise anything that can reach the field from outside this editor.
 

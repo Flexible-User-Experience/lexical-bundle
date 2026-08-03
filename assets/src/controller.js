@@ -29,7 +29,7 @@ import {
 } from '@lexical/list';
 import { LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, $toggleLink } from '@lexical/link';
 import { registerHistory, createEmptyHistoryState } from '@lexical/history';
-import { mergeRegister, $getNearestNodeOfType, $findMatchingParent } from '@lexical/utils';
+import { mergeRegister, $getNearestNodeOfType, $findMatchingParent, $dfs } from '@lexical/utils';
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.
@@ -83,7 +83,7 @@ const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
  * actions/targets.
  */
 export default class extends Controller {
-    static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab'];
+    static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab', 'sourceDialog', 'sourceInput'];
     static values = {
         invalidUrlMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
@@ -127,6 +127,8 @@ export default class extends Controller {
             this.#toggleLink();
         } else if ('unlink' === command) {
             this.#removeLink();
+        } else if ('source' === command) {
+            this.#openSource();
         }
     }
 
@@ -205,6 +207,26 @@ export default class extends Controller {
         this.urlInputTarget.value = '';
     }
 
+    // Apply the HTML from the source modal as the new document. A plain update (unlike
+    // the initial load, which merges into history) so the whole swap lands as a single
+    // undoable step. The re-import round-trips the text through Lexical's model, so
+    // whatever the model cannot represent simply does not survive into the document.
+    confirmSource() {
+        const html = this.sourceInputTarget.value.trim();
+        this.sourceDialogTarget.close();
+        this.editor.update(() => {
+            this.#replaceContent(html);
+            this.#unwrapUnsafeLinks();
+        });
+        this.editor.focus();
+        this.markChanged();
+    }
+
+    // Dismiss the source modal without touching the document (Cancel button).
+    closeSourceDialog() {
+        this.sourceDialogTarget.close();
+    }
+
     // --- Editor ------------------------------------------------------------
 
     #createEditor() {
@@ -260,21 +282,39 @@ export default class extends Controller {
     #loadInitialHtml() {
         const html = (this.inputTarget.value || '').trim();
         this.editor.update(
-            () => {
-                const root = $getRoot();
-                root.clear();
-                if ('' !== html) {
-                    const dom = new DOMParser().parseFromString(html, 'text/html');
-                    const nodes = $generateNodesFromDOM(this.editor, dom);
-                    root.select();
-                    $insertNodes(nodes);
-                }
-                if (0 === $getRoot().getChildrenSize()) {
-                    $getRoot().append($createParagraphNode());
-                }
-            },
+            () => this.#replaceContent(html),
             { tag: 'history-merge', discrete: true },
         );
+    }
+
+    // Swap the whole document for the given HTML, falling back to one empty paragraph.
+    // Must run inside an editor.update() scope.
+    #replaceContent(html) {
+        const root = $getRoot();
+        root.clear();
+        if ('' !== html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html');
+            const nodes = $generateNodesFromDOM(this.editor, dom);
+            root.select();
+            $insertNodes(nodes);
+        }
+        if (0 === $getRoot().getChildrenSize()) {
+            $getRoot().append($createParagraphNode());
+        }
+    }
+
+    // Hand-written source can carry hrefs the link modal would never accept, so after a
+    // source import every link whose URL fails the same scheme allowlist is unwrapped
+    // (the link text stays, the link itself goes). Keeps the "the editor only produces
+    // links with allowed schemes" guarantee airtight. Must run inside an editor.update().
+    #unwrapUnsafeLinks() {
+        $dfs().forEach(({ node }) => {
+            if (!$isLinkNode(node) || this.#isSafeUrl(node.getURL())) {
+                return;
+            }
+            node.getChildren().forEach((child) => node.insertBefore(child));
+            node.remove();
+        });
     }
 
     #syncOut(editorState) {
@@ -324,6 +364,14 @@ export default class extends Controller {
     // this only fires when there is something to remove.
     #removeLink() {
         this.editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+    }
+
+    // Open the source modal pre-filled with the editor's current HTML — the exact
+    // string the hidden textarea would submit, since #syncOut keeps them identical.
+    #openSource() {
+        this.sourceInputTarget.value = this.inputTarget.value;
+        this.sourceDialogTarget.showModal();
+        this.sourceInputTarget.focus();
     }
 
     #refreshToolbar(editorState) {

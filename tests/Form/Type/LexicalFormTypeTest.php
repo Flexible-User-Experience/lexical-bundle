@@ -25,6 +25,8 @@ final class LexicalFormTypeTest extends TypeTestCase
             'indent', 'outdent',
             '|',
             'link', 'unlink',
+            '|',
+            'source',
         ], $view->vars['lexical_toolbar']);
         self::assertSame('|', $view->vars['lexical_separator']);
         self::assertSame('200px', $view->vars['lexical_height']);

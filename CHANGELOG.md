@@ -37,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.
+- A `source` toolbar button (Lucide `file-code-corner` icon, bundled in the offline icon set), in
+  the default toolbar as its own trailing group: it opens a modal where the document is edited as
+  plain-text HTML. Confirming re-imports the markup through Lexical's model — markup the editor
+  cannot represent is normalised away — as a single undoable history step, and every imported link
+  is checked against the same `allowed_link_schemes` allowlist as the link modal (a disallowed
+  scheme unwraps the link), so the source path cannot smuggle e.g. `javascript:` hrefs into the
+  stored HTML. Labels are translated in English, Spanish and Catalan.
 
 ## [0.4.0] - 2026-07-20
 

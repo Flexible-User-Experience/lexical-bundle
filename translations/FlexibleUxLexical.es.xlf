@@ -70,6 +70,10 @@
                 <source>toolbar.unlink</source>
                 <target>Quitar enlace</target>
             </trans-unit>
+            <trans-unit id="toolbar.source">
+                <source>toolbar.source</source>
+                <target>Editar código fuente</target>
+            </trans-unit>
             <trans-unit id="dialog.link.title">
                 <source>dialog.link.title</source>
                 <target>Insertar enlace</target>
@@ -81,6 +85,14 @@
             <trans-unit id="dialog.link.new_tab">
                 <source>dialog.link.new_tab</source>
                 <target>Abrir en una pestaña nueva</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.title">
+                <source>dialog.source.title</source>
+                <target>Editar código fuente</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.label">
+                <source>dialog.source.label</source>
+                <target>Código HTML</target>
             </trans-unit>
             <trans-unit id="dialog.cancel">
                 <source>dialog.cancel</source>

@@ -29,6 +29,7 @@
         outdent: { icon: 'indent-decrease', label: 'toolbar.outdent' },
         link: { icon: 'link', label: 'toolbar.link' },
         unlink: { icon: 'unlink', label: 'toolbar.unlink' },
+        source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
     {%- set lexical_sep = lexical_separator|default('|') -%}
     <div class="lexical"
@@ -82,6 +83,26 @@
                             {{ stimulus_action('lexical', 'closeDialog') }}>{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
                     <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
                             {{ stimulus_action('lexical', 'confirmLink') }}>{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
+                </div>
+            </div>
+        </dialog>
+        {#- Source modal for the `source` button: the document's HTML as editable plain
+            text. Enter inserts newlines (never submits), Escape closes natively, and the
+            nameless textarea can never be picked up by the surrounding form. -#}
+        <dialog class="lexical__dialog lexical__dialog--source"
+                aria-label="{{ 'dialog.source.title'|trans({}, 'FlexibleUxLexical') }}"
+                {{ stimulus_target('lexical', 'sourceDialog') }}>
+            <div class="lexical__dialog-body">
+                <label class="lexical__dialog-label">
+                    {{ 'dialog.source.label'|trans({}, 'FlexibleUxLexical') }}
+                    <textarea class="lexical__dialog-textarea" rows="10" spellcheck="false"
+                              {{ stimulus_target('lexical', 'sourceInput') }}></textarea>
+                </label>
+                <div class="lexical__dialog-actions">
+                    <button type="button" class="lexical__dialog-btn"
+                            {{ stimulus_action('lexical', 'closeSourceDialog') }}>{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
+                    <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
+                            {{ stimulus_action('lexical', 'confirmSource') }}>{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
                 </div>
             </div>
         </dialog>
