@@ -7,9 +7,11 @@ import {
     $getSelection,
     $setSelection,
     $isRangeSelection,
+    $isElementNode,
     $insertNodes,
     $createParagraphNode,
     FORMAT_TEXT_COMMAND,
+    FORMAT_ELEMENT_COMMAND,
     INDENT_CONTENT_COMMAND,
     OUTDENT_CONTENT_COMMAND,
     SELECTION_CHANGE_COMMAND,
@@ -27,7 +29,7 @@ import {
 } from '@lexical/list';
 import { LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, $toggleLink } from '@lexical/link';
 import { registerHistory, createEmptyHistoryState } from '@lexical/history';
-import { mergeRegister, $getNearestNodeOfType, $findMatchingParent } from '@lexical/utils';
+import { mergeRegister, $getNearestNodeOfType, $findMatchingParent, $dfs } from '@lexical/utils';
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.
@@ -56,6 +58,16 @@ const INDENT_COMMANDS = {
     outdent: OUTDENT_CONTENT_COMMAND,
 };
 
+// Toolbar command → Lexical element format. Dispatched through FORMAT_ELEMENT_COMMAND
+// (handled by rich text) and reflected radio-style: the button matching the current
+// block's format lights up, none when the block still has the default ('') format.
+const ALIGN_FORMATS = {
+    'align-left': 'left',
+    'align-center': 'center',
+    'align-right': 'right',
+    'align-justify': 'justify',
+};
+
 // Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
 // pass the attribute. Mirrors LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES. Whatever the
 // list, anything outside it — notably `javascript:` and `data:` — is rejected, so stored
@@ -71,7 +83,7 @@ const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
  * actions/targets.
  */
 export default class extends Controller {
-    static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab'];
+    static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab', 'sourceDialog', 'sourceInput'];
     static values = {
         invalidUrlMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
@@ -105,6 +117,8 @@ export default class extends Controller {
         const command = event.currentTarget.dataset.command;
         if (TEXT_FORMATS.has(command)) {
             this.editor.dispatchCommand(FORMAT_TEXT_COMMAND, command);
+        } else if (command in ALIGN_FORMATS) {
+            this.editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, ALIGN_FORMATS[command]);
         } else if (command in INDENT_COMMANDS) {
             this.editor.dispatchCommand(INDENT_COMMANDS[command], undefined);
         } else if ('bullet' === command || 'number' === command) {
@@ -113,6 +127,8 @@ export default class extends Controller {
             this.#toggleLink();
         } else if ('unlink' === command) {
             this.#removeLink();
+        } else if ('source' === command) {
+            this.#openSource();
         }
     }
 
@@ -191,6 +207,26 @@ export default class extends Controller {
         this.urlInputTarget.value = '';
     }
 
+    // Apply the HTML from the source modal as the new document. A plain update (unlike
+    // the initial load, which merges into history) so the whole swap lands as a single
+    // undoable step. The re-import round-trips the text through Lexical's model, so
+    // whatever the model cannot represent simply does not survive into the document.
+    confirmSource() {
+        const html = this.sourceInputTarget.value.trim();
+        this.sourceDialogTarget.close();
+        this.editor.update(() => {
+            this.#replaceContent(html);
+            this.#unwrapUnsafeLinks();
+        });
+        this.editor.focus();
+        this.markChanged();
+    }
+
+    // Dismiss the source modal without touching the document (Cancel button).
+    closeSourceDialog() {
+        this.sourceDialogTarget.close();
+    }
+
     // --- Editor ------------------------------------------------------------
 
     #createEditor() {
@@ -246,21 +282,39 @@ export default class extends Controller {
     #loadInitialHtml() {
         const html = (this.inputTarget.value || '').trim();
         this.editor.update(
-            () => {
-                const root = $getRoot();
-                root.clear();
-                if ('' !== html) {
-                    const dom = new DOMParser().parseFromString(html, 'text/html');
-                    const nodes = $generateNodesFromDOM(this.editor, dom);
-                    root.select();
-                    $insertNodes(nodes);
-                }
-                if (0 === $getRoot().getChildrenSize()) {
-                    $getRoot().append($createParagraphNode());
-                }
-            },
+            () => this.#replaceContent(html),
             { tag: 'history-merge', discrete: true },
         );
+    }
+
+    // Swap the whole document for the given HTML, falling back to one empty paragraph.
+    // Must run inside an editor.update() scope.
+    #replaceContent(html) {
+        const root = $getRoot();
+        root.clear();
+        if ('' !== html) {
+            const dom = new DOMParser().parseFromString(html, 'text/html');
+            const nodes = $generateNodesFromDOM(this.editor, dom);
+            root.select();
+            $insertNodes(nodes);
+        }
+        if (0 === $getRoot().getChildrenSize()) {
+            $getRoot().append($createParagraphNode());
+        }
+    }
+
+    // Hand-written source can carry hrefs the link modal would never accept, so after a
+    // source import every link whose URL fails the same scheme allowlist is unwrapped
+    // (the link text stays, the link itself goes). Keeps the "the editor only produces
+    // links with allowed schemes" guarantee airtight. Must run inside an editor.update().
+    #unwrapUnsafeLinks() {
+        $dfs().forEach(({ node }) => {
+            if (!$isLinkNode(node) || this.#isSafeUrl(node.getURL())) {
+                return;
+            }
+            node.getChildren().forEach((child) => node.insertBefore(child));
+            node.remove();
+        });
     }
 
     #syncOut(editorState) {
@@ -274,7 +328,9 @@ export default class extends Controller {
     // --- Toolbar operations ------------------------------------------------
 
     #toggleList(type) {
-        const active = this.#readListType() === type;
+        // #readListType is a read helper, so give it the read scope it requires —
+        // calling it bare throws "Unable to find an active editor state".
+        const active = this.editor.getEditorState().read(() => this.#readListType()) === type;
         if (active) {
             this.editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
         } else {
@@ -310,8 +366,16 @@ export default class extends Controller {
         this.editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
 
+    // Open the source modal pre-filled with the editor's current HTML — the exact
+    // string the hidden textarea would submit, since #syncOut keeps them identical.
+    #openSource() {
+        this.sourceInputTarget.value = this.inputTarget.value;
+        this.sourceDialogTarget.showModal();
+        this.sourceInputTarget.focus();
+    }
+
     #refreshToolbar(editorState) {
-        const state = { formats: {}, listType: null, link: false };
+        const state = { formats: {}, align: null, listType: null, link: false };
         editorState.read(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) {
@@ -321,6 +385,7 @@ export default class extends Controller {
             TEXT_FORMATS.forEach((format) => {
                 state.formats[format] = selection.hasFormat(format);
             });
+            state.align = this.#readAlignment();
             state.listType = this.#readListType();
             state.link = null !== this.#linkNode();
         });
@@ -330,6 +395,8 @@ export default class extends Controller {
             let active = false;
             if (TEXT_FORMATS.has(command)) {
                 active = state.formats[command] ?? false;
+            } else if (command in ALIGN_FORMATS) {
+                active = state.align === ALIGN_FORMATS[command];
             } else if ('bullet' === command || 'number' === command) {
                 active = state.listType === command;
             } else if ('link' === command) {
@@ -343,6 +410,22 @@ export default class extends Controller {
     }
 
     // Read helpers — must run inside an editorState.read()/update() scope.
+
+    // Alignment of the block at the caret — the same nearest non-inline element that
+    // FORMAT_ELEMENT_COMMAND targets. Returns null for the default ('') format, so no
+    // alignment button claims to be active until one is applied.
+    #readAlignment() {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) {
+            return null;
+        }
+        const block = $findMatchingParent(
+            selection.anchor.getNode(),
+            (node) => $isElementNode(node) && !node.isInline(),
+        );
+
+        return (block && block.getFormatType()) || null;
+    }
 
     #readListType() {
         const selection = $getSelection();

@@ -204,6 +204,29 @@
     outline: none;
 }
 
+/* Source modal — same chrome as the link modal, sized for editing markup. */
+.lexical__dialog--source {
+    width: 640px;
+}
+
+.lexical__dialog-textarea {
+    min-height: 180px;
+    padding: 6px 10px;
+    border: 1px solid #d2d6de;
+    background: #fff;
+    color: #333;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.lexical__dialog-textarea:focus {
+    border-color: #3c8dbc;
+    outline: none;
+}
+
 .lexical__dialog-actions {
     display: flex;
     justify-content: flex-end;

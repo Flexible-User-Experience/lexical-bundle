@@ -5,7 +5,45 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-08-03
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.48.0`
+  to `^0.49.0`. Neither of the two breaking changes in
+  [v0.49.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md) affects the bundle: one
+  removes redundant TypeScript generics (the controller is plain JavaScript) and the other ports the
+  node classes to the `config()` protocol (the bundle registers the built-in nodes unchanged, and
+  editing, alignment, lists and HTML round-tripping were verified against 0.49.0).
+
+### Fixed
+
+- Toggling the `bullet` / `number` toolbar buttons never inserted or removed the list and raised
+  Lexical's "Unable to find an active editor state" error: the controller read the current list type
+  outside an `editorState.read()` scope. Present since the first release; Lexical 0.49 keeps
+  enforcing the scope, so the read is now wrapped properly.
+
+### Added
+
+- Four text-alignment toolbar buttons — `align-left`, `align-center`, `align-right` and
+  `align-justify` — available through the `toolbar` option and enabled by default as a new group
+  between the text formats and the lists. They dispatch Lexical's `FORMAT_ELEMENT_COMMAND`, and the
+  button matching the current block's alignment lights up radio-style (none while the block keeps
+  the default alignment). Lexical stores the result as an inline `text-align` on the block, so the
+  alignment survives into the saved HTML with no extra CSS.
+  Like every toolbar entry the buttons are optional and individually pickable: a `toolbar` option
+  (per field or via the bundle configuration) without `align-*` entries renders no alignment
+  buttons — existing `text-align` styles in stored content are still preserved when edited.
+- The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
+  are bundled with the existing offline icon set, and the labels are translated in English, Spanish
+  and Catalan.
+- A `source` toolbar button (Lucide `file-code-corner` icon, bundled in the offline icon set), in
+  the default toolbar as its own trailing group: it opens a modal where the document is edited as
+  plain-text HTML. Confirming re-imports the markup through Lexical's model — markup the editor
+  cannot represent is normalised away — as a single undoable history step, and every imported link
+  is checked against the same `allowed_link_schemes` allowlist as the link modal (a disallowed
+  scheme unwraps the link), so the source path cannot smuggle e.g. `javascript:` hrefs into the
+  stored HTML. Labels are translated in English, Spanish and Catalan.
 
 ## [0.4.0] - 2026-07-20
 

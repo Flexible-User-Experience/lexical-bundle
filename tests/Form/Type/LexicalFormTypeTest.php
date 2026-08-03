@@ -18,11 +18,15 @@ final class LexicalFormTypeTest extends TypeTestCase
         self::assertSame([
             'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
             '|',
+            'align-left', 'align-center', 'align-right', 'align-justify',
+            '|',
             'bullet', 'number',
             '|',
             'indent', 'outdent',
             '|',
             'link', 'unlink',
+            '|',
+            'source',
         ], $view->vars['lexical_toolbar']);
         self::assertSame('|', $view->vars['lexical_separator']);
         self::assertSame('200px', $view->vars['lexical_height']);

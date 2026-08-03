@@ -30,6 +30,22 @@
                 <source>toolbar.superscript</source>
                 <target>Superíndex</target>
             </trans-unit>
+            <trans-unit id="toolbar.align_left">
+                <source>toolbar.align_left</source>
+                <target>Alinea a l'esquerra</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_center">
+                <source>toolbar.align_center</source>
+                <target>Centra</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_right">
+                <source>toolbar.align_right</source>
+                <target>Alinea a la dreta</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_justify">
+                <source>toolbar.align_justify</source>
+                <target>Justifica</target>
+            </trans-unit>
             <trans-unit id="toolbar.indent">
                 <source>toolbar.indent</source>
                 <target>Augmenta el sagnat</target>
@@ -54,6 +70,10 @@
                 <source>toolbar.unlink</source>
                 <target>Suprimeix l'enllaç</target>
             </trans-unit>
+            <trans-unit id="toolbar.source">
+                <source>toolbar.source</source>
+                <target>Edita el codi font</target>
+            </trans-unit>
             <trans-unit id="dialog.link.title">
                 <source>dialog.link.title</source>
                 <target>Insereix un enllaç</target>
@@ -65,6 +85,14 @@
             <trans-unit id="dialog.link.new_tab">
                 <source>dialog.link.new_tab</source>
                 <target>Obre en una pestanya nova</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.title">
+                <source>dialog.source.title</source>
+                <target>Edita el codi font</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.label">
+                <source>dialog.source.label</source>
+                <target>Codi HTML</target>
             </trans-unit>
             <trans-unit id="dialog.cancel">
                 <source>dialog.cancel</source>

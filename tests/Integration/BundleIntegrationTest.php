@@ -94,9 +94,10 @@ final class BundleIntegrationTest extends KernelTestCase
         // Icon resolved from the shipped `lexical` UX Icons set.
         self::assertStringContainsString('<svg', $html);
 
-        // Translated label (default locale en) and the link dialog.
+        // Translated label (default locale en) and the two modals (link + source).
         self::assertStringContainsString('Bold', $html);
         self::assertStringContainsString('class="lexical__dialog"', $html);
+        self::assertStringContainsString('data-lexical-target="sourceDialog"', $html);
 
         // Initial HTML round-trips into the hidden textarea.
         self::assertStringContainsString('<textarea', $html);
@@ -124,8 +125,46 @@ final class BundleIntegrationTest extends KernelTestCase
             self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
         }
 
-        // The default groups the buttons with three separators (text · list · indent · link).
-        self::assertSame(3, substr_count($html, 'lexical__sep'));
+        // The default groups the buttons with five separators
+        // (text · align · list · indent · link · source).
+        self::assertSame(5, substr_count($html, 'lexical__sep'));
+    }
+
+    public function testAlignmentButtonsAreOptional(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        // A consumer that does not use alignment lists a toolbar without the align
+        // entries — nothing alignment-related reaches the markup.
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, [
+                'toolbar' => ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink'],
+            ])
+            ->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertStringNotContainsString('data-command="align-', $html);
+        self::assertStringContainsString('data-command="bold"', $html);
+    }
+
+    public function testAlignmentButtonsCanBeCherryPicked(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        // The four buttons are independent entries, not a bundle deal.
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, [
+                'toolbar' => ['bold', '|', 'align-left', 'align-center'],
+            ])
+            ->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertStringContainsString('data-command="align-left"', $html);
+        self::assertStringContainsString('data-command="align-center"', $html);
+        self::assertStringNotContainsString('data-command="align-right"', $html);
+        self::assertStringNotContainsString('data-command="align-justify"', $html);
     }
 
     public function testBundleConfigurationProvidesApplicationWideDefaults(): void
@@ -164,6 +203,9 @@ final class BundleIntegrationTest extends KernelTestCase
         self::assertSame(1, substr_count($html, 'lexical__sep'));
         self::assertStringContainsString('data-command="bold"', $html);
         self::assertStringNotContainsString('data-command="bullet"', $html);
+        // The application-wide toolbar is also how alignment is opted out for every
+        // field at once — no align entry in the config, no align button in the markup.
+        self::assertStringNotContainsString('data-command="align-', $html);
 
         $kernel->shutdown();
     }
