@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button matching the current block's alignment lights up radio-style (none while the block keeps
   the default alignment). Lexical stores the result as an inline `text-align` on the block, so the
   alignment survives into the saved HTML with no extra CSS.
+  Like every toolbar entry the buttons are optional and individually pickable: a `toolbar` option
+  (per field or via the bundle configuration) without `align-*` entries renders no alignment
+  buttons — existing `text-align` styles in stored content are still preserved when edited.
 - The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.

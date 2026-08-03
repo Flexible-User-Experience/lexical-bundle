@@ -111,6 +111,15 @@ entirely yours to decide:
 'toolbar' => ['bold', 'italic', 'link'],                  // no separators at all
 ```
 
+Every button is optional and independent: only what you list is rendered. A field that does not
+want the alignment features simply leaves the `align-*` entries out (and existing `text-align`
+styles in stored content are still preserved when edited — only the toolbar control disappears):
+
+```php
+'toolbar' => ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink'],   // no alignment
+'toolbar' => ['bold', '|', 'align-center'],   // or cherry-pick a single alignment button
+```
+
 Leading, trailing and repeated separators are dropped, so a list can never render a stray or doubled
 divider. An unknown button name raises a clear `InvalidOptionsException` listing the valid ones.
 
@@ -140,6 +149,9 @@ flexible_ux_lexical:
     height: '320px'
     allowed_link_schemes: ['https']
 ```
+
+This is also how a feature is opted out for the whole application at once — the `toolbar` above,
+for instance, has no alignment buttons, so no field gets them unless it overrides the option.
 
 Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 

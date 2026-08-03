@@ -130,6 +130,12 @@ does while the block keeps the default (`''`) alignment. Like indentation, the r
 inline style (`text-align`) on the block, so it survives into the saved HTML and needs no CSS from
 the bundle.
 
+Alignment — like every toolbar feature — is optional: a `toolbar` (per field, or application-wide
+through the bundle configuration) that lists no `align-*` entries renders no alignment buttons, and
+the four entries can also be cherry-picked individually. An editor without the buttons still
+**preserves** any `text-align` already present in the stored (or pasted) HTML when the content is
+edited; opting out only removes the ability to change alignment from the toolbar.
+
 ## Architecture
 
 | Layer | File | Responsibility |
