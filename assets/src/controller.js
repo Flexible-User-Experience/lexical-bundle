@@ -288,7 +288,9 @@ export default class extends Controller {
     // --- Toolbar operations ------------------------------------------------
 
     #toggleList(type) {
-        const active = this.#readListType() === type;
+        // #readListType is a read helper, so give it the read scope it requires —
+        // calling it bare throws "Unable to find an active editor state".
+        const active = this.editor.getEditorState().read(() => this.#readListType()) === type;
         if (active) {
             this.editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
         } else {

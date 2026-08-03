@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.48.0`
+  to `^0.49.0`. Neither of the two breaking changes in
+  [v0.49.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md) affects the bundle: one
+  removes redundant TypeScript generics (the controller is plain JavaScript) and the other ports the
+  node classes to the `config()` protocol (the bundle registers the built-in nodes unchanged, and
+  editing, alignment, lists and HTML round-tripping were verified against 0.49.0).
+
+### Fixed
+
+- Toggling the `bullet` / `number` toolbar buttons never inserted or removed the list and raised
+  Lexical's "Unable to find an active editor state" error: the controller read the current list type
+  outside an `editorState.read()` scope. Present since the first release; Lexical 0.49 keeps
+  enforcing the scope, so the read is now wrapped properly.
+
 ### Added
 
 - Four text-alignment toolbar buttons — `align-left`, `align-center`, `align-right` and
