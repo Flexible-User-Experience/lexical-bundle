@@ -230,9 +230,12 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.canc
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
   `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
-  link modal, and a link imported through the `source` modal or the `paste` / `paste-word` buttons is
-  unwrapped when its scheme is not in the list. Widening the list widens what can be stored, so add
-  schemes deliberately.
+  link modal, and everywhere else the allowlist is enforced by a Lexical node transform: whichever way
+  a link enters the document — the `source` modal, the `paste` / `paste-word` buttons, a native
+  Ctrl+V paste, drag-and-drop, or the initial load of already-stored content — a link whose scheme is
+  not in the list is unwrapped (its text stays, the link is dropped). Note the last point: content
+  that already contains a disallowed link loses that link the next time it is opened and saved
+  through the editor. Widening the list widens what can be stored, so add schemes deliberately.
 - The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
   sanitise anything that can reach the field from outside this editor.
 

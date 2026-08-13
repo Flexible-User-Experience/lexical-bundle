@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (24 buttons). Custom `toolbar` options are unaffected; the new buttons are opt-in there like any
   other entry.
 
+### Security
+
+- A native keyboard paste (Ctrl+V / ⌘V) or a drag-and-drop could smuggle a link with a disallowed
+  scheme — e.g. `javascript:` — into the stored HTML: only the link modal, the `source` modal and
+  the toolbar paste buttons enforced the `allowed_link_schemes` allowlist. Enforcement now lives in
+  a Lexical node transform on `LinkNode`, the one place every path converges, so any link entering
+  the document by any means is unwrapped when its scheme is not allowed (its text stays, the link
+  goes). This also covers the initial load: stored content that already carries a disallowed link
+  loses that link — silently, by design — the next time it is edited. The explicit unwrap pass the
+  `source` modal and the paste buttons used to run is gone, replaced by the transform.
+
 ## [0.5.0] - 2026-08-03
 
 ### Changed
