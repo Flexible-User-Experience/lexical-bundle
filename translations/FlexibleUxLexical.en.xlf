@@ -6,6 +6,30 @@
                 <source>toolbar.label</source>
                 <target>Text formatting</target>
             </trans-unit>
+            <trans-unit id="toolbar.undo">
+                <source>toolbar.undo</source>
+                <target>Undo</target>
+            </trans-unit>
+            <trans-unit id="toolbar.redo">
+                <source>toolbar.redo</source>
+                <target>Redo</target>
+            </trans-unit>
+            <trans-unit id="toolbar.cut">
+                <source>toolbar.cut</source>
+                <target>Cut</target>
+            </trans-unit>
+            <trans-unit id="toolbar.copy">
+                <source>toolbar.copy</source>
+                <target>Copy</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste">
+                <source>toolbar.paste</source>
+                <target>Paste</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste_word">
+                <source>toolbar.paste_word</source>
+                <target>Paste from Word</target>
+            </trans-unit>
             <trans-unit id="toolbar.bold">
                 <source>toolbar.bold</source>
                 <target>Bold</target>
@@ -29,6 +53,10 @@
             <trans-unit id="toolbar.superscript">
                 <source>toolbar.superscript</source>
                 <target>Superscript</target>
+            </trans-unit>
+            <trans-unit id="toolbar.remove_format">
+                <source>toolbar.remove_format</source>
+                <target>Remove format</target>
             </trans-unit>
             <trans-unit id="toolbar.align_left">
                 <source>toolbar.align_left</source>
@@ -105,6 +133,10 @@
             <trans-unit id="error.invalid_url">
                 <source>error.invalid_url</source>
                 <target>Please enter a valid URL (http, https, mailto or tel).</target>
+            </trans-unit>
+            <trans-unit id="error.clipboard_denied">
+                <source>error.clipboard_denied</source>
+                <target>The browser blocked clipboard access — paste with Ctrl+V (⌘V on Mac) instead.</target>
             </trans-unit>
         </body>
     </file>
