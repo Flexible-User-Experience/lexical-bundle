@@ -5,6 +5,45 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Seven new toolbar buttons completing the classic CKEditor default layout, every one optional and
+  in the default toolbar at its familiar position: `undo` / `redo` as the leading group,
+  `cut` / `copy` / `paste` / `paste-word` as the clipboard group, and `remove-format` closing the
+  text-format group.
+  - `undo` / `redo` dispatch Lexical's history commands and stay disabled while their stack is
+    empty (driven by the `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads).
+  - `cut` / `copy` dispatch `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard event —
+    no Clipboard API permission involved — and are disabled while the selection is collapsed.
+  - `paste` / `paste-word` read the system clipboard through the asynchronous Clipboard API
+    (secure context; the browser may ask the user's permission). When access is denied, a
+    translated hint (`error.clipboard_denied`) points at Ctrl+V / ⌘V, which remains native Lexical
+    behaviour. Pasted markup is imported through Lexical's model — whatever the model cannot
+    represent is normalised away — and links whose scheme is not in `allowed_link_schemes` are
+    unwrapped, exactly as in the `source` modal.
+  - `paste-word` scrubs Word's clipboard HTML before the import: conditional comments and
+    Office-namespace elements (`<o:p>`, …) are dropped, and consecutive `mso-list` paragraphs are
+    rebuilt as real bulleted/numbered lists (flat — nesting levels are not reconstructed) instead
+    of importing as paragraphs with a literal "·" / "1." marker in front.
+  - `remove-format` strips the inline text formats and styles from the selection; block structure
+    (lists, alignment, indentation) and links are kept, mirroring CKEditor's RemoveFormat scope.
+- The matching Lucide icons — `undo`, `redo`, `scissors`, `copy`, `clipboard-paste`,
+  `clipboard-type` and `remove-formatting` — join the bundled offline icon set, and the labels are
+  translated in English, Spanish and Catalan.
+- `@lexical/clipboard` in the bundle's importmap (`assets/package.json`): with Flex it lands in
+  `importmap.php` automatically on install; without Flex it is part of the documented
+  `importmap:require` command. It was already a transitive dependency of `@lexical/rich-text`, so
+  applications installed through Flex or the documented command need no change.
+
+### Changed
+
+- `DEFAULT_TOOLBAR` now opens with the history and clipboard groups and its text-format group ends
+  with `remove-format`, growing the default from six groups (17 buttons) to eight groups
+  (24 buttons). Custom `toolbar` options are unaffected; the new buttons are opt-in there like any
+  other entry.
+
 ## [0.5.0] - 2026-08-03
 
 ### Changed

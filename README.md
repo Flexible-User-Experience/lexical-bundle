@@ -6,14 +6,15 @@ form field built on Meta's [Lexical](https://lexical.dev), wired for
 [Stimulus](https://symfony.com/bundles/StimulusBundle) and
 [UX Icons](https://symfony.com/bundles/ux-icons).
 
-The field renders a toolbar (bold, italic, underline, strikethrough, subscript / superscript,
-text alignment, bulleted / numbered lists, indentation, link, unlink, HTML source editing) and a
+The field renders a toolbar (undo / redo, cut / copy / paste — including paste from Word —,
+bold, italic, underline, strikethrough, subscript / superscript, remove format, text alignment,
+bulleted / numbered lists, indentation, link, unlink, HTML source editing) and a
 contenteditable surface around a hidden `<textarea>`. The editor reads the
 textarea's HTML on load and writes HTML back on every change, so it is a drop-in replacement for a
 plain textarea and **degrades to that textarea when JavaScript is disabled**. No build step is
 required — everything runs through AssetMapper's importmap.
 
-![The rendered LexicalFormType field: the toolbar (text formats, alignment, lists, indentation, link and source-code buttons) above the editable surface](docs/screenshot.png)
+![The rendered LexicalFormType field: the toolbar (history, clipboard, text formats, alignment, lists, indentation, link and source-code buttons) above the editable surface](docs/screenshot.png)
 
 ## Requirements
 
@@ -39,7 +40,7 @@ enabled in your `assets/controllers.json`. Skip to step 3.
 Add the Lexical packages to your importmap:
 
 ```console
-php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
+php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
 ```
 
 and enable the Stimulus controller in `assets/controllers.json`:
@@ -93,7 +94,7 @@ $builder->add('description', LexicalFormType::class, [
 
 | Option                 | Type       | Default                                    | Description                                             |
 |------------------------|------------|--------------------------------------------|---------------------------------------------------------|
-| `toolbar`              | `string[]` | all 17 buttons in six `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 24 buttons in eight `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                                  | Minimum editable height (any CSS length).               |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`          | URL schemes the link modal accepts.                     |
 
@@ -101,9 +102,16 @@ $builder->add('description', LexicalFormType::class, [
 
 Available buttons:
 
-`bold` · `italic` · `underline` · `strikethrough` · `subscript` · `superscript` · `align-left` ·
-`align-center` · `align-right` · `align-justify` · `bullet` · `number` · `indent` · `outdent` ·
-`link` · `unlink` · `source`
+`undo` · `redo` · `cut` · `copy` · `paste` · `paste-word` · `bold` · `italic` · `underline` ·
+`strikethrough` · `subscript` · `superscript` · `remove-format` · `align-left` · `align-center` ·
+`align-right` · `align-justify` · `bullet` · `number` · `indent` · `outdent` · `link` · `unlink` ·
+`source`
+
+The `paste` and `paste-word` buttons read the system clipboard through the asynchronous Clipboard
+API, so they need a secure context and (browser-dependent) the user's permission; when access is
+denied the editor shows a translated hint to paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> instead.
+`paste-word` additionally cleans Word's markup and rebuilds its lists — see
+[`docs/index.md`](docs/index.md) for details.
 
 The toolbar renders **exactly the order you give**, and `|` draws a separator — so grouping is
 entirely yours to decide:

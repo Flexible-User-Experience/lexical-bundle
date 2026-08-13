@@ -28,7 +28,7 @@ With Symfony Flex this also adds the Lexical packages to `importmap.php` and ena
 controller in `assets/controllers.json`. Without Flex, do both manually:
 
 ```console
-php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/list @lexical/link @lexical/history @lexical/utils
+php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
 ```
 
 ```json
@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 17 buttons, in six groups     | Ordered entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 24 buttons, in eight groups   | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -84,9 +84,10 @@ $builder->add('description', LexicalFormType::class, [
 ]);
 ```
 
-The button names are `bold`, `italic`, `underline`, `strikethrough`, `subscript`, `superscript`,
-`align-left`, `align-center`, `align-right`, `align-justify`, `bullet`, `number`, `indent`,
-`outdent`, `link`, `unlink` and `source`.
+The button names are `undo`, `redo`, `cut`, `copy`, `paste`, `paste-word`, `bold`, `italic`,
+`underline`, `strikethrough`, `subscript`, `superscript`, `remove-format`, `align-left`,
+`align-center`, `align-right`, `align-justify`, `bullet`, `number`, `indent`, `outdent`, `link`,
+`unlink` and `source`.
 
 ### Grouping the toolbar
 
@@ -117,6 +118,33 @@ flexible_ux_lexical:
 The values are bound to the `flexible_ux_lexical.toolbar`, `.height` and `.allowed_link_schemes`
 container parameters and injected into the form type, so `config:dump-reference flexible_ux_lexical`
 documents them and an unknown key fails at container compile time.
+
+`undo` and `redo` dispatch Lexical's history commands and stay disabled while their stack is
+empty (driven by Lexical's `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads), exactly like the
+keyboard shortcuts they mirror.
+
+`cut` and `copy` dispatch Lexical's `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard
+event, so they involve no Clipboard API permission and work wherever the keyboard shortcuts do;
+both are disabled while the selection is collapsed. `paste` and `paste-word` are different: a
+toolbar button can only *read* the clipboard through the asynchronous
+[Clipboard API](https://developer.mozilla.org/docs/Web/API/Clipboard_API), which requires a secure
+context (HTTPS or localhost) and, depending on the browser, the user's permission. When access is
+denied a translated hint (`error.clipboard_denied`) tells the user to paste with
+<kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>⌘V</kbd> instead — keyboard pasting is native Lexical
+behaviour and always works. Pasted content goes through Lexical's model like any other paste, so
+markup the editor cannot represent is normalised away, and links are checked against
+`allowed_link_schemes` (a disallowed scheme unwraps the link, as in the `source` modal).
+
+`paste-word` additionally scrubs the clipboard's HTML the way CKEditor's *Paste from Word* did
+before importing it: Word's conditional comments and Office-namespace elements (`<o:p>`, …) are
+dropped, and consecutive `mso-list` paragraphs — which would otherwise import as plain paragraphs
+carrying a literal "·" or "1." marker — are rebuilt as real bulleted/numbered lists. The rebuilt
+lists are flat: nesting levels are not reconstructed. Everything else Word adds (Mso classes,
+`mso-*` styles) is ignored by the model import anyway.
+
+`remove-format` strips the inline text formats (bold, italic, underline, strikethrough,
+sub/superscript and inline text styles) from the selection while leaving block structure — lists,
+alignment, indentation — and links untouched, mirroring CKEditor's *Remove Format* scope.
 
 `subscript` and `superscript` are Lexical text formats and toggle like the other text buttons.
 `indent` and `outdent` are one-shot block actions (Lexical's `INDENT_CONTENT_COMMAND` /
@@ -195,14 +223,16 @@ your own stylesheet — the bundle's CSS is plain, unscoped and low-specificity 
 
 All labels live in the `FlexibleUxLexical` translation domain (English, Spanish and Catalan ship with
 the bundle). Add or override a locale by placing `translations/FlexibleUxLexical.<locale>.xlf` in your
-application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.cancel`, `dialog.confirm`, `error.invalid_url`.
+application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.cancel`, `dialog.confirm`,
+`error.invalid_url`, `error.clipboard_denied`.
 
 ## Security notes
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
   `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
-  link modal, and a link imported through the `source` modal is unwrapped when its scheme is not in
-  the list. Widening the list widens what can be stored, so add schemes deliberately.
+  link modal, and a link imported through the `source` modal or the `paste` / `paste-word` buttons is
+  unwrapped when its scheme is not in the list. Widening the list widens what can be stored, so add
+  schemes deliberately.
 - The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
   sanitise anything that can reach the field from outside this editor.
 
