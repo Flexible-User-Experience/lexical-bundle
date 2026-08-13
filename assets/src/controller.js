@@ -8,17 +8,25 @@ import {
     $setSelection,
     $isRangeSelection,
     $isElementNode,
+    $isTextNode,
     $insertNodes,
     $createParagraphNode,
     FORMAT_TEXT_COMMAND,
     FORMAT_ELEMENT_COMMAND,
     INDENT_CONTENT_COMMAND,
     OUTDENT_CONTENT_COMMAND,
+    UNDO_COMMAND,
+    REDO_COMMAND,
+    CAN_UNDO_COMMAND,
+    CAN_REDO_COMMAND,
+    CUT_COMMAND,
+    COPY_COMMAND,
     SELECTION_CHANGE_COMMAND,
     COMMAND_PRIORITY_LOW,
 } from 'lexical';
 import { registerRichText, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
+import { $insertDataTransferForRichText } from '@lexical/clipboard';
 import {
     ListNode,
     ListItemNode,
@@ -58,6 +66,21 @@ const INDENT_COMMANDS = {
     outdent: OUTDENT_CONTENT_COMMAND,
 };
 
+// One-shot history commands, handled by the registered history plugin. The buttons are
+// enabled/disabled from the CAN_UNDO/CAN_REDO payloads rather than an active state.
+const HISTORY_COMMANDS = {
+    undo: UNDO_COMMAND,
+    redo: REDO_COMMAND,
+};
+
+// Clipboard-out commands, handled by rich text. Dispatched with a null payload, which
+// makes the handler synthesise the clipboard event itself — no Clipboard API
+// permission is involved, unlike the paste buttons.
+const CLIPBOARD_COMMANDS = {
+    cut: CUT_COMMAND,
+    copy: COPY_COMMAND,
+};
+
 // Toolbar command → Lexical element format. Dispatched through FORMAT_ELEMENT_COMMAND
 // (handled by rich text) and reflected radio-style: the button matching the current
 // block's format lights up, none when the block still has the default ('') format.
@@ -86,6 +109,7 @@ export default class extends Controller {
     static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab', 'sourceDialog', 'sourceInput'];
     static values = {
         invalidUrlMessage: String,
+        clipboardDeniedMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
     };
 
@@ -115,7 +139,15 @@ export default class extends Controller {
 
     command(event) {
         const command = event.currentTarget.dataset.command;
-        if (TEXT_FORMATS.has(command)) {
+        if (command in HISTORY_COMMANDS) {
+            this.editor.dispatchCommand(HISTORY_COMMANDS[command], undefined);
+        } else if (command in CLIPBOARD_COMMANDS) {
+            this.editor.dispatchCommand(CLIPBOARD_COMMANDS[command], null);
+        } else if ('paste' === command || 'paste-word' === command) {
+            this.#paste('paste-word' === command);
+        } else if ('remove-format' === command) {
+            this.#removeFormat();
+        } else if (TEXT_FORMATS.has(command)) {
             this.editor.dispatchCommand(FORMAT_TEXT_COMMAND, command);
         } else if (command in ALIGN_FORMATS) {
             this.editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, ALIGN_FORMATS[command]);
@@ -240,6 +272,10 @@ export default class extends Controller {
         this.editor = editor;
         editor.setRootElement(this.editableTarget);
 
+        // History availability, kept current by the CAN_UNDO/CAN_REDO handlers below.
+        this.canUndo = false;
+        this.canRedo = false;
+
         this.teardown = mergeRegister(
             registerRichText(editor),
             registerList(editor),
@@ -258,6 +294,28 @@ export default class extends Controller {
                     }
 
                     return true;
+                },
+                COMMAND_PRIORITY_LOW,
+            ),
+            // The undo/redo buttons mirror the history stacks, whose availability only
+            // ever arrives through these two payloads — refresh as soon as one does.
+            editor.registerCommand(
+                CAN_UNDO_COMMAND,
+                (canUndo) => {
+                    this.canUndo = canUndo;
+                    this.#refreshToolbar(editor.getEditorState());
+
+                    return false;
+                },
+                COMMAND_PRIORITY_LOW,
+            ),
+            editor.registerCommand(
+                CAN_REDO_COMMAND,
+                (canRedo) => {
+                    this.canRedo = canRedo;
+                    this.#refreshToolbar(editor.getEditorState());
+
+                    return false;
                 },
                 COMMAND_PRIORITY_LOW,
             ),
@@ -374,8 +432,161 @@ export default class extends Controller {
         this.sourceInputTarget.focus();
     }
 
+    // Strip the inline text formats and styles from the selection, leaving the block
+    // structure — lists, headings, alignment, indentation — and links alone (CKEditor's
+    // RemoveFormat scope). extract() splits the boundary text nodes, so only the
+    // selected slice is cleared.
+    #removeFormat() {
+        this.editor.update(() => {
+            const selection = $getSelection();
+            if (!$isRangeSelection(selection) || selection.isCollapsed()) {
+                return;
+            }
+            selection.extract().forEach((node) => {
+                if (!$isTextNode(node)) {
+                    return;
+                }
+                if (0 !== node.getFormat()) {
+                    node.setFormat(0);
+                }
+                if ('' !== node.getStyle()) {
+                    node.setStyle('');
+                }
+            });
+        });
+    }
+
+    // Paste the system clipboard at the caret; `fromWord` scrubs Word's markup first.
+    // Either way the content goes through Lexical's model like any paste (markup the
+    // model cannot represent is dropped) and, as with the source modal, links whose
+    // scheme is not allowed are unwrapped.
+    async #paste(fromWord) {
+        const dataTransfer = await this.#readClipboard();
+        if (null === dataTransfer) {
+            alert(this.clipboardDeniedMessageValue);
+
+            return;
+        }
+        if (fromWord) {
+            const html = dataTransfer.getData('text/html');
+            if ('' !== html) {
+                dataTransfer.setData('text/html', this.#cleanWordHtml(html));
+            }
+        }
+        // The permission prompt some browsers show for clipboard.read() may have taken
+        // the focus (and with it the selection) away; restore it before inserting.
+        this.editor.focus();
+        this.editor.update(() => {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+                $insertDataTransferForRichText(dataTransfer, selection, this.editor);
+            }
+            this.#unwrapUnsafeLinks();
+        });
+    }
+
+    // Read the system clipboard into a DataTransfer carrying the html and plain-text
+    // flavours. A toolbar button can only get at the clipboard through the asynchronous
+    // Clipboard API (execCommand('paste') is blocked by every modern browser), which
+    // needs a secure context and the user's permission — when even the text-only
+    // fallback is denied this resolves to null and the caller shows the Ctrl+V hint.
+    // Keyboard pasting is native Lexical behaviour and involves none of this.
+    async #readClipboard() {
+        const dataTransfer = new DataTransfer();
+        try {
+            for (const item of await navigator.clipboard.read()) {
+                for (const type of ['text/html', 'text/plain']) {
+                    if (item.types.includes(type)) {
+                        dataTransfer.setData(type, await (await item.getType(type)).text());
+                    }
+                }
+            }
+        } catch {
+            // Denied, insecure context, or an older Firefox without read() — a
+            // plain-text paste still beats none.
+            try {
+                dataTransfer.setData('text/plain', await navigator.clipboard.readText());
+            } catch {
+                return null;
+            }
+        }
+
+        return dataTransfer;
+    }
+
+    // Scrub the markup Word puts on the clipboard down to what survives the model
+    // import anyway, plus the one thing that would otherwise import wrong: the lists.
+    // Conditional comments and Office-namespace elements (<o:p>, <v:shape>, …) are
+    // dropped; Mso classes and mso-* styles need no handling because the model import
+    // ignores them.
+    #cleanWordHtml(html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+
+        // Word interleaves its markup with conditional comments; collect first, a
+        // TreeWalker cannot survive its current node being removed.
+        const comments = [];
+        const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_COMMENT);
+        while (walker.nextNode()) {
+            comments.push(walker.currentNode);
+        }
+        comments.forEach((comment) => comment.remove());
+
+        doc.body.querySelectorAll('*').forEach((element) => {
+            if (element.localName.includes(':')) {
+                element.remove();
+            }
+        });
+
+        this.#convertWordLists(doc);
+
+        return doc.body.innerHTML;
+    }
+
+    // Word encodes a list item as a paragraph whose style carries `mso-list` metadata
+    // and whose visible marker ("·", "1.", …) sits in a span styled `mso-list:Ignore`.
+    // Without this, a pasted list imports as paragraphs with a literal bullet glyph in
+    // front. Each consecutive run of such paragraphs belonging to the same list — Word
+    // names the instance with the style's `lfoN` token, so two adjacent but distinct
+    // lists stay distinct — becomes one flat <ul>/<ol> (ordered when its first marker
+    // looks like "1." / "a)"), and the markers go away with the paragraphs. Nesting
+    // levels are not reconstructed.
+    #convertWordLists(doc) {
+        const isItem = (node) => null !== node && 'p' === node.localName
+            && (/mso-list/i.test(node.getAttribute('style') || '') || node.className.includes('MsoListParagraph'));
+        const listIdOf = (paragraph) => ((paragraph.getAttribute('style') || '').match(/lfo\d+/i) ?? ['?'])[0];
+        const markerOf = (paragraph) => [...paragraph.querySelectorAll('span')].find(
+            (span) => /mso-list\s*:\s*ignore/i.test(span.getAttribute('style') || ''),
+        ) ?? null;
+
+        [...doc.body.querySelectorAll('p')].forEach((paragraph) => {
+            // Only the first paragraph of a run builds the list; the ones it pulls in
+            // below are skipped here (once removed they are no longer connected).
+            if (!paragraph.isConnected || !isItem(paragraph)) {
+                return;
+            }
+            const id = listIdOf(paragraph);
+            const previous = paragraph.previousElementSibling;
+            if (null !== previous && isItem(previous) && listIdOf(previous) === id) {
+                return;
+            }
+            const marker = markerOf(paragraph);
+            const ordered = null !== marker && /^[0-9a-z]{1,4}[.)]/i.test(marker.textContent.trim());
+            const list = doc.createElement(ordered ? 'ol' : 'ul');
+            paragraph.before(list);
+            for (let item = paragraph; isItem(item) && listIdOf(item) === id; ) {
+                const next = item.nextElementSibling;
+                markerOf(item)?.remove();
+                const entry = doc.createElement('li');
+                entry.append(...item.childNodes);
+                list.append(entry);
+                item.remove();
+                item = next;
+            }
+        });
+    }
+
     #refreshToolbar(editorState) {
-        const state = { formats: {}, align: null, listType: null, link: false };
+        const state = { formats: {}, align: null, listType: null, link: false, collapsed: true };
         editorState.read(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) {
@@ -388,6 +599,7 @@ export default class extends Controller {
             state.align = this.#readAlignment();
             state.listType = this.#readListType();
             state.link = null !== this.#linkNode();
+            state.collapsed = selection.isCollapsed();
         });
 
         this.buttonTargets.forEach((button) => {
@@ -404,6 +616,13 @@ export default class extends Controller {
             } else if ('unlink' === command) {
                 // Nothing to unlink unless the caret sits inside a link.
                 button.disabled = !state.link;
+            } else if ('undo' === command) {
+                button.disabled = !this.canUndo;
+            } else if ('redo' === command) {
+                button.disabled = !this.canRedo;
+            } else if ('cut' === command || 'copy' === command) {
+                // Nothing to cut or copy while nothing is selected.
+                button.disabled = state.collapsed;
             }
             button.classList.toggle('is-active', active);
         });
