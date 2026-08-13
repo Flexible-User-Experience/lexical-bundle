@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.0] - 2026-08-13
 
 ### Added
 
@@ -15,22 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   text-format group.
   - `undo` / `redo` dispatch Lexical's history commands and stay disabled while their stack is
     empty (driven by the `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads).
-  - `cut` / `copy` dispatch `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard event —
-    no Clipboard API permission involved — and are disabled while the selection is collapsed.
+  - `cut` / `copy` dispatch `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard event ???
+    no Clipboard API permission involved ??? and are disabled while the selection is collapsed.
   - `paste` / `paste-word` read the system clipboard through the asynchronous Clipboard API
     (secure context; the browser may ask the user's permission). When access is denied, a
-    translated hint (`error.clipboard_denied`) points at Ctrl+V / ⌘V, which remains native Lexical
-    behaviour. Pasted markup is imported through Lexical's model — whatever the model cannot
-    represent is normalised away — and links whose scheme is not in `allowed_link_schemes` are
+    translated hint (`error.clipboard_denied`) points at Ctrl+V / ???V, which remains native Lexical
+    behaviour. Pasted markup is imported through Lexical's model ??? whatever the model cannot
+    represent is normalised away ??? and links whose scheme is not in `allowed_link_schemes` are
     unwrapped, exactly as in the `source` modal.
   - `paste-word` scrubs Word's clipboard HTML before the import: conditional comments and
-    Office-namespace elements (`<o:p>`, …) are dropped, and consecutive `mso-list` paragraphs are
-    rebuilt as real bulleted/numbered lists (flat — nesting levels are not reconstructed) instead
-    of importing as paragraphs with a literal "·" / "1." marker in front.
+    Office-namespace elements (`<o:p>`, ???) are dropped, and consecutive `mso-list` paragraphs are
+    rebuilt as real bulleted/numbered lists (flat ??? nesting levels are not reconstructed) instead
+    of importing as paragraphs with a literal "??" / "1." marker in front.
   - `remove-format` strips the inline text formats and styles from the selection; block structure
     (lists, alignment, indentation) and links are kept, mirroring CKEditor's RemoveFormat scope.
-- The matching Lucide icons — `undo`, `redo`, `scissors`, `copy`, `clipboard-paste`,
-  `clipboard-type` and `remove-formatting` — join the bundled offline icon set, and the labels are
+- The matching Lucide icons ??? `undo`, `redo`, `scissors`, `copy`, `clipboard-paste`,
+  `clipboard-type` and `remove-formatting` ??? join the bundled offline icon set, and the labels are
   translated in English, Spanish and Catalan.
 - `@lexical/clipboard` in the bundle's importmap (`assets/package.json`): with Flex it lands in
   `importmap.php` automatically on install; without Flex it is part of the documented
@@ -46,13 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- A native keyboard paste (Ctrl+V / ⌘V) or a drag-and-drop could smuggle a link with a disallowed
-  scheme — e.g. `javascript:` — into the stored HTML: only the link modal, the `source` modal and
+- A native keyboard paste (Ctrl+V / ???V) or a drag-and-drop could smuggle a link with a disallowed
+  scheme ??? e.g. `javascript:` ??? into the stored HTML: only the link modal, the `source` modal and
   the toolbar paste buttons enforced the `allowed_link_schemes` allowlist. Enforcement now lives in
   a Lexical node transform on `LinkNode`, the one place every path converges, so any link entering
   the document by any means is unwrapped when its scheme is not allowed (its text stays, the link
   goes). This also covers the initial load: stored content that already carries a disallowed link
-  loses that link — silently, by design — the next time it is edited. The explicit unwrap pass the
+  loses that link ??? silently, by design ??? the next time it is edited. The explicit unwrap pass the
   `source` modal and the paste buttons used to run is gone, replaced by the transform.
 
 ## [0.5.0] - 2026-08-03
@@ -75,22 +75,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Four text-alignment toolbar buttons — `align-left`, `align-center`, `align-right` and
-  `align-justify` — available through the `toolbar` option and enabled by default as a new group
+- Four text-alignment toolbar buttons ??? `align-left`, `align-center`, `align-right` and
+  `align-justify` ??? available through the `toolbar` option and enabled by default as a new group
   between the text formats and the lists. They dispatch Lexical's `FORMAT_ELEMENT_COMMAND`, and the
   button matching the current block's alignment lights up radio-style (none while the block keeps
   the default alignment). Lexical stores the result as an inline `text-align` on the block, so the
   alignment survives into the saved HTML with no extra CSS.
   Like every toolbar entry the buttons are optional and individually pickable: a `toolbar` option
   (per field or via the bundle configuration) without `align-*` entries renders no alignment
-  buttons — existing `text-align` styles in stored content are still preserved when edited.
-- The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
+  buttons ??? existing `text-align` styles in stored content are still preserved when edited.
+- The matching Lucide icons ??? `align-left`, `align-center`, `align-right` and `align-justify` ???
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.
 - A `source` toolbar button (Lucide `file-code-corner` icon, bundled in the offline icon set), in
   the default toolbar as its own trailing group: it opens a modal where the document is edited as
-  plain-text HTML. Confirming re-imports the markup through Lexical's model — markup the editor
-  cannot represent is normalised away — as a single undoable history step, and every imported link
+  plain-text HTML. Confirming re-imports the markup through Lexical's model ??? markup the editor
+  cannot represent is normalised away ??? as a single undoable history step, and every imported link
   is checked against the same `allowed_link_schemes` allowlist as the link modal (a disallowed
   scheme unwraps the link), so the source path cannot smuggle e.g. `javascript:` hrefs into the
   stored HTML. Labels are translated in English, Spanish and Catalan.
@@ -113,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button-to-group map inside the form theme, which meant a custom `toolbar` had no say in them. The
   toolbar now renders entries in exactly the order given and draws a divider wherever a `|` entry
   appears. `DEFAULT_TOOLBAR` embeds the previous four groups, so the out-of-the-box appearance is
-  unchanged — but **a custom `toolbar` no longer gets automatic separators**: add `'|'` entries where
+  unchanged ??? but **a custom `toolbar` no longer gets automatic separators**: add `'|'` entries where
   you want them.
 - Redundant separators (leading, trailing or repeated) are dropped when the option is normalised, so
   a hand-written list cannot render a stray or doubled divider.
@@ -130,11 +130,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `subscript` and `superscript` (Lexical text formats, toggling like the other text buttons) and
   `indent` / `outdent` (Lexical's `INDENT_CONTENT_COMMAND` and `OUTDENT_CONTENT_COMMAND`, one-shot
   block actions that never render as "active").
-- The matching Lucide icons — `subscript`, `superscript`, `indent-increase` and `indent-decrease` —
+- The matching Lucide icons ??? `subscript`, `superscript`, `indent-increase` and `indent-decrease` ???
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.
 - A new `indent` toolbar group, so the theme draws a separator between the list and indent buttons
-  (text · list · indent · link).
+  (text ?? list ?? indent ?? link).
 
 ### Changed
 
