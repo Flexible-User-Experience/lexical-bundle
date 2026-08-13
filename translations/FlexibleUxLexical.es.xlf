@@ -6,6 +6,30 @@
                 <source>toolbar.label</source>
                 <target>Formato de texto</target>
             </trans-unit>
+            <trans-unit id="toolbar.undo">
+                <source>toolbar.undo</source>
+                <target>Deshacer</target>
+            </trans-unit>
+            <trans-unit id="toolbar.redo">
+                <source>toolbar.redo</source>
+                <target>Rehacer</target>
+            </trans-unit>
+            <trans-unit id="toolbar.cut">
+                <source>toolbar.cut</source>
+                <target>Cortar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.copy">
+                <source>toolbar.copy</source>
+                <target>Copiar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste">
+                <source>toolbar.paste</source>
+                <target>Pegar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste_word">
+                <source>toolbar.paste_word</source>
+                <target>Pegar desde Word</target>
+            </trans-unit>
             <trans-unit id="toolbar.bold">
                 <source>toolbar.bold</source>
                 <target>Negrita</target>
@@ -29,6 +53,10 @@
             <trans-unit id="toolbar.superscript">
                 <source>toolbar.superscript</source>
                 <target>Superíndice</target>
+            </trans-unit>
+            <trans-unit id="toolbar.remove_format">
+                <source>toolbar.remove_format</source>
+                <target>Eliminar formato</target>
             </trans-unit>
             <trans-unit id="toolbar.align_left">
                 <source>toolbar.align_left</source>
@@ -105,6 +133,10 @@
             <trans-unit id="error.invalid_url">
                 <source>error.invalid_url</source>
                 <target>Introduce una URL válida (http, https, mailto o tel).</target>
+            </trans-unit>
+            <trans-unit id="error.clipboard_denied">
+                <source>error.clipboard_denied</source>
+                <target>El navegador ha bloqueado el acceso al portapapeles: pega con Ctrl+V (⌘V en Mac).</target>
             </trans-unit>
         </body>
     </file>

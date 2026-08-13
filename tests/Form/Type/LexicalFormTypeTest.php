@@ -16,7 +16,11 @@ final class LexicalFormTypeTest extends TypeTestCase
 
         self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $view->vars['lexical_toolbar']);
         self::assertSame([
-            'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript',
+            'undo', 'redo',
+            '|',
+            'cut', 'copy', 'paste', 'paste-word',
+            '|',
+            'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript', 'remove-format',
             '|',
             'align-left', 'align-center', 'align-right', 'align-justify',
             '|',
