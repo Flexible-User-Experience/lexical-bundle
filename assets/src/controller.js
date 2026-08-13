@@ -37,7 +37,7 @@ import {
 } from '@lexical/list';
 import { LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, $toggleLink } from '@lexical/link';
 import { registerHistory, createEmptyHistoryState } from '@lexical/history';
-import { mergeRegister, $getNearestNodeOfType, $findMatchingParent, $dfs } from '@lexical/utils';
+import { mergeRegister, $getNearestNodeOfType, $findMatchingParent } from '@lexical/utils';
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.
@@ -242,13 +242,13 @@ export default class extends Controller {
     // Apply the HTML from the source modal as the new document. A plain update (unlike
     // the initial load, which merges into history) so the whole swap lands as a single
     // undoable step. The re-import round-trips the text through Lexical's model, so
-    // whatever the model cannot represent simply does not survive into the document.
+    // whatever the model cannot represent simply does not survive into the document —
+    // and the LinkNode transform unwraps any imported link with a disallowed scheme.
     confirmSource() {
         const html = this.sourceInputTarget.value.trim();
         this.sourceDialogTarget.close();
         this.editor.update(() => {
             this.#replaceContent(html);
-            this.#unwrapUnsafeLinks();
         });
         this.editor.focus();
         this.markChanged();
@@ -297,6 +297,21 @@ export default class extends Controller {
                 },
                 COMMAND_PRIORITY_LOW,
             ),
+            // The scheme allowlist, enforced where every path into the document
+            // converges: whichever way a link arrives — the link modal, the source
+            // modal, the toolbar paste buttons, a native Ctrl+V paste, drag-and-drop,
+            // or the initial load of stored content — a LinkNode whose URL fails the
+            // allowlist is unwrapped on the spot (its text stays, the link goes). The
+            // link modal validates before dispatching, so its inserts are never
+            // touched, and the unwrap joins whatever update created the link, adding
+            // no history entry of its own.
+            editor.registerNodeTransform(LinkNode, (linkNode) => {
+                if (this.#isSafeUrl(linkNode.getURL())) {
+                    return;
+                }
+                linkNode.getChildren().forEach((child) => linkNode.insertBefore(child));
+                linkNode.remove();
+            }),
             // The undo/redo buttons mirror the history stacks, whose availability only
             // ever arrives through these two payloads — refresh as soon as one does.
             editor.registerCommand(
@@ -359,20 +374,6 @@ export default class extends Controller {
         if (0 === $getRoot().getChildrenSize()) {
             $getRoot().append($createParagraphNode());
         }
-    }
-
-    // Hand-written source can carry hrefs the link modal would never accept, so after a
-    // source import every link whose URL fails the same scheme allowlist is unwrapped
-    // (the link text stays, the link itself goes). Keeps the "the editor only produces
-    // links with allowed schemes" guarantee airtight. Must run inside an editor.update().
-    #unwrapUnsafeLinks() {
-        $dfs().forEach(({ node }) => {
-            if (!$isLinkNode(node) || this.#isSafeUrl(node.getURL())) {
-                return;
-            }
-            node.getChildren().forEach((child) => node.insertBefore(child));
-            node.remove();
-        });
     }
 
     #syncOut(editorState) {
@@ -458,8 +459,8 @@ export default class extends Controller {
 
     // Paste the system clipboard at the caret; `fromWord` scrubs Word's markup first.
     // Either way the content goes through Lexical's model like any paste (markup the
-    // model cannot represent is dropped) and, as with the source modal, links whose
-    // scheme is not allowed are unwrapped.
+    // model cannot represent is dropped) and, like every path into the document, links
+    // whose scheme is not allowed are unwrapped by the LinkNode transform.
     async #paste(fromWord) {
         const dataTransfer = await this.#readClipboard();
         if (null === dataTransfer) {
@@ -481,7 +482,6 @@ export default class extends Controller {
             if ($isRangeSelection(selection)) {
                 $insertDataTransferForRichText(dataTransfer, selection, this.editor);
             }
-            this.#unwrapUnsafeLinks();
         });
     }
 
