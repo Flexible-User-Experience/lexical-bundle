@@ -125,9 +125,9 @@ final class BundleIntegrationTest extends KernelTestCase
             self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
         }
 
-        // The default groups the buttons with five separators
-        // (text · align · list · indent · link · source).
-        self::assertSame(5, substr_count($html, 'lexical__sep'));
+        // The default groups the buttons with seven separators
+        // (history · clipboard · text · align · list · indent · link · source).
+        self::assertSame(7, substr_count($html, 'lexical__sep'));
     }
 
     public function testAlignmentButtonsAreOptional(): void

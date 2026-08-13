@@ -13,12 +13,19 @@
         rendered in the exact order given, and a `lexical__sep` divider is drawn wherever
         the caller placed a separator entry, so applications are free to group as they like. -#}
     {%- set lexical_icons = {
+        undo: { icon: 'undo', label: 'toolbar.undo' },
+        redo: { icon: 'redo', label: 'toolbar.redo' },
+        cut: { icon: 'scissors', label: 'toolbar.cut' },
+        copy: { icon: 'copy', label: 'toolbar.copy' },
+        paste: { icon: 'clipboard-paste', label: 'toolbar.paste' },
+        'paste-word': { icon: 'clipboard-type', label: 'toolbar.paste_word' },
         bold: { icon: 'bold', label: 'toolbar.bold' },
         italic: { icon: 'italic', label: 'toolbar.italic' },
         underline: { icon: 'underline', label: 'toolbar.underline' },
         strikethrough: { icon: 'strikethrough', label: 'toolbar.strikethrough' },
         subscript: { icon: 'subscript', label: 'toolbar.subscript' },
         superscript: { icon: 'superscript', label: 'toolbar.superscript' },
+        'remove-format': { icon: 'remove-formatting', label: 'toolbar.remove_format' },
         'align-left': { icon: 'align-left', label: 'toolbar.align_left' },
         'align-center': { icon: 'align-center', label: 'toolbar.align_center' },
         'align-right': { icon: 'align-right', label: 'toolbar.align_right' },
@@ -35,6 +42,7 @@
     <div class="lexical"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
+             clipboardDeniedMessage: 'error.clipboard_denied'|trans({}, 'FlexibleUxLexical'),
              allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
          }) }}
          style="--lexical-min-height: {{ lexical_height|default('200px') }};">

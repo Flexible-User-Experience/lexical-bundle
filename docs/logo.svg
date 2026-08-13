@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="192" height="192">
+    <title>FlexibleUxLexicalBundle</title>
+    <!-- Two colours only: #f97316 (orange) on #ffffff (white field). -->
+    <rect x="4" y="4" width="40" height="40" rx="8" fill="#ffffff"/>
+    <g fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="4" width="40" height="40" rx="8"/>
+        <path d="M6 16.5h36"/>
+        <path d="M19 23v14h10"/>
+    </g>
+    <rect x="9" y="8" width="4" height="4" rx="1.25" fill="#f97316"/>
+    <g fill="none" stroke="#f97316" stroke-width="3" stroke-linecap="round">
+        <path d="M19 8.5l-2 3"/>
+        <path d="M23.5 10h4"/>
+    </g>
+</svg>
