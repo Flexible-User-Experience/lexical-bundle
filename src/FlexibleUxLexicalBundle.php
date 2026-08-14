@@ -56,23 +56,23 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
             ->end();
     }
 
-    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
+    public function loadExtension(array $config, ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
-        $builder->setParameter('flexible_ux_lexical.toolbar', $config['toolbar']);
-        $builder->setParameter('flexible_ux_lexical.height', $config['height']);
-        $builder->setParameter('flexible_ux_lexical.allowed_link_schemes', $config['allowed_link_schemes']);
+        $container->setParameter('flexible_ux_lexical.toolbar', $config['toolbar']);
+        $container->setParameter('flexible_ux_lexical.height', $config['height']);
+        $container->setParameter('flexible_ux_lexical.allowed_link_schemes', $config['allowed_link_schemes']);
 
-        $container->import('../config/services.php');
+        $configurator->import('../config/services.php');
     }
 
-    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    public function prependExtension(ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
-        if ($builder->hasExtension('framework')) {
+        if ($container->hasExtension('framework')) {
             // Expose the bundle's `assets/` dir to AssetMapper under the same name the
             // Stimulus controller is referenced by. Without this, vendored bundle assets
             // are NOT auto-discovered and the `lexical` controller cannot be resolved
             // ("Could not find an asset mapper path that points to the lexical controller").
-            $builder->prependExtensionConfig('framework', [
+            $container->prependExtensionConfig('framework', [
                 'asset_mapper' => [
                     'paths' => [
                         $this->getPath().'/assets' => '@flexible-ux/lexical-bundle',
@@ -81,14 +81,14 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
             ]);
         }
 
-        if ($builder->hasExtension('twig')) {
-            $builder->prependExtensionConfig('twig', [
+        if ($container->hasExtension('twig')) {
+            $container->prependExtensionConfig('twig', [
                 'form_themes' => ['@FlexibleUxLexical/form/lexical_widget.html.twig'],
             ]);
         }
 
-        if ($builder->hasExtension('ux_icons')) {
-            $builder->prependExtensionConfig('ux_icons', [
+        if ($container->hasExtension('ux_icons')) {
+            $container->prependExtensionConfig('ux_icons', [
                 'icon_sets' => [
                     'lexical' => ['path' => $this->getPath().'/assets/icons'],
                 ],
