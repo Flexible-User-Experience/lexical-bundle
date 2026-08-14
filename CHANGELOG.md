@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Narrowed the runtime requirements to the components the bundle actually uses: the broad
+  `symfony/framework-bundle` requirement is replaced by `symfony/config`,
+  `symfony/dependency-injection`, `symfony/http-kernel` and `symfony/options-resolver`.
+  FrameworkBundle is still booted by the test kernel, so it moved to `require-dev`.
+- Raised the PHPUnit constraint to `^11.5 || ^12.0 || ^13.0`: PHPUnit 10 is redundant with the
+  PHP 8.2 floor (PHPUnit 11 runs on PHP 8.2), and PHPUnit 12 and 13 are now allowed.
+
+### Removed
+
+- The unused `symfony/phpunit-bridge` dev requirement — nothing registered the bridge, so it
+  was inert under a plain `vendor/bin/phpunit` run.
+
 ## [0.6.0] - 2026-08-13
 
 ### Added
@@ -183,7 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.2.1...v0.3.0

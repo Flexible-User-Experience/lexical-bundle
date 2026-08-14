@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace FlexibleUx\Tests\Form\Type;
 
 use FlexibleUx\Form\Type\LexicalFormType;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Test\TypeTestCase;
 
+/**
+ * The attribute opts out of PHPUnit 13's expectation-less-mock notice: the mock is the
+ * EventDispatcherInterface created by {@see TypeTestCase::setUp()} in vendor code, not ours
+ * to refactor. PHPUnit 11 does not know the attribute and ignores it.
+ */
+#[AllowMockObjectsWithoutExpectations]
 final class LexicalFormTypeTest extends TypeTestCase
 {
     public function testDefaultViewVars(): void
