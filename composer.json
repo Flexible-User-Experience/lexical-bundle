@@ -42,12 +42,12 @@
     },
     "autoload": {
         "psr-4": {
-            "FlexibleUx\\": "src/"
+            "FlexibleUx\\LexicalBundle\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "FlexibleUx\\Tests\\": "tests/"
+            "FlexibleUx\\LexicalBundle\\Tests\\": "tests/"
         }
     },
     "config": {

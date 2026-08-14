@@ -64,7 +64,7 @@ alike):
 // config/bundles.php
 return [
     // ...
-    FlexibleUx\FlexibleUxLexicalBundle::class => ['all' => true],
+    FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle::class => ['all' => true],
 ];
 ```
 
@@ -74,7 +74,7 @@ automatically; the editor's CSS is imported by the controller, so there is nothi
 ## Usage
 
 ```php
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 
 $builder->add('description', LexicalFormType::class);
 ```
@@ -173,7 +173,7 @@ responsible for sanitising any HTML that reaches the field from other sources.
 
 The bundle is deliberately split into four layers so each can be understood and overridden on its own:
 
-- **PHP** — `FlexibleUx\Form\Type\LexicalFormType` exposes the `toolbar` / `height` options as view
+- **PHP** — `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType` exposes the `toolbar` / `height` options as view
   variables.
 - **HTML** — the `lexical_widget` Twig form theme renders the toolbar, the editable surface and the
   link modal.
