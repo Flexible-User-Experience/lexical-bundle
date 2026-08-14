@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlexibleUx\Tests\Fixtures;
+namespace FlexibleUx\LexicalBundle\Tests\Fixtures;
 
-use FlexibleUx\FlexibleUxLexicalBundle;
+use FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\TwigBundle\TwigBundle;

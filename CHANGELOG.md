@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **BC break**: added the `LexicalBundle` namespace sublevel so several FlexibleUx bundles can
+  coexist without class collisions — the root namespace is now `FlexibleUx\LexicalBundle\` and
+  the bundle class `FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle`. Update your
+  `config/bundles.php` registration and any `FlexibleUx\Form\Type\LexicalFormType` import to
+  `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType`. The `flexible_ux_lexical` config key,
+  the service ids and the `FlexibleUxLexical` translation domain are unchanged.
+
 ## [0.6.1] - 2026-08-14
 
 ### Changed

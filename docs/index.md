@@ -44,7 +44,7 @@ php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexi
 Then register the bundle in `config/bundles.php` (no Flex recipe is shipped yet):
 
 ```php
-FlexibleUx\FlexibleUxLexicalBundle::class => ['all' => true],
+FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle::class => ['all' => true],
 ```
 
 The bundle auto-registers its AssetMapper path, its form theme and its icon set through
@@ -54,7 +54,7 @@ are required.
 ## Usage
 
 ```php
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 
 $builder->add('description', LexicalFormType::class, [
     'toolbar' => ['bold', 'italic', 'bullet', 'number', 'link', 'unlink'],
@@ -245,7 +245,7 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.canc
   check that `@flexible-ux/lexical-bundle` → `lexical` is `enabled` in `assets/controllers.json` and
   that your page renders `{{ importmap('app') }}`.
 - **`Could not find an asset mapper path that points to the lexical controller`.** The bundle isn't
-  registered — make sure `FlexibleUx\FlexibleUxLexicalBundle` is in `config/bundles.php` so its
+  registered — make sure `FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle` is in `config/bundles.php` so its
   `prependExtension()` can add the AssetMapper path.
 - **`Unable to find an asset ... "lexical"`.** The Lexical packages aren't in your importmap — run the
   `importmap:require` command shown in the setup steps.

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace FlexibleUx\Tests\Integration;
+namespace FlexibleUx\LexicalBundle\Tests\Integration;
 
-use FlexibleUx\FlexibleUxLexicalBundle;
-use FlexibleUx\Form\Type\LexicalFormType;
-use FlexibleUx\Tests\Fixtures\TestKernel;
+use FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Tests\Fixtures\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Form\FormFactoryInterface;
 use Twig\Environment;

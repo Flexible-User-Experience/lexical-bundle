@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlexibleUx;
+namespace FlexibleUx\LexicalBundle;
 
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 /**
  * Registers the Lexical rich-text form type together with the assets that power it.
  *
- * On top of the tagged {@see \FlexibleUx\Form\Type\LexicalFormType} service, the bundle
+ * On top of the tagged {@see \FlexibleUx\LexicalBundle\Form\Type\LexicalFormType} service, the bundle
  * prepends two pieces of configuration so the field works with zero manual wiring:
  *
  *  - the `lexical_widget` form theme is appended to Twig's `form_themes`, and

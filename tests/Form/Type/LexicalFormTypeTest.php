@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlexibleUx\Tests\Form\Type;
+namespace FlexibleUx\LexicalBundle\Tests\Form\Type;
 
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Test\TypeTestCase;
