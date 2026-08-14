@@ -3,23 +3,24 @@
     "type": "symfony-bundle",
     "description": "A reusable Symfony form type providing a lightweight Lexical (Meta) rich-text editor, wired with AssetMapper, Stimulus and UX Icons.",
     "keywords": [
+        "asset-mapper",
+        "editor",
+        "form",
+        "lexical",
+        "rich-text",
+        "stimulus",
         "symfony",
         "symfony-bundle",
         "symfony-ux",
-        "lexical",
-        "wysiwyg",
-        "rich-text",
-        "editor",
-        "form",
-        "stimulus",
-        "asset-mapper"
+        "wysiwyg"
     ],
     "homepage": "https://github.com/Flexible-User-Experience/lexical-bundle",
     "license": "MIT",
     "authors": [
         {
             "name": "David Romaní",
-            "email": "david@flux.cat"
+            "email": "david@flux.cat",
+            "homepage": "https://github.com/davidromani"
         }
     ],
     "require": {
