@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;

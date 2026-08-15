@@ -1,5 +1,5 @@
 {#
-    Form theme for FlexibleUx\Form\Type\LexicalFormType. Renders the toolbar (icons via
+    Form theme for FlexibleUx\LexicalBundle\Form\Type\LexicalFormType. Renders the toolbar (icons via
     ux_icon) and the editable surface around the real textarea, all bound to the
     `lexical` Stimulus controller. The controller keeps the textarea in sync with the
     editor's HTML; styling ships in assets/styles/lexical.css (loaded by the controller).
@@ -36,12 +36,15 @@
         outdent: { icon: 'indent-decrease', label: 'toolbar.outdent' },
         link: { icon: 'link', label: 'toolbar.link' },
         unlink: { icon: 'unlink', label: 'toolbar.unlink' },
+        iframe: { icon: 'globe', label: 'toolbar.iframe' },
         source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
     {%- set lexical_sep = lexical_separator|default('|') -%}
     <div class="lexical"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
+             invalidEmbedUrlMessage: 'error.invalid_embed_url'|trans({}, 'FlexibleUxLexical'),
+             invalidEmbedSizeMessage: 'error.invalid_embed_size'|trans({}, 'FlexibleUxLexical'),
              clipboardDeniedMessage: 'error.clipboard_denied'|trans({}, 'FlexibleUxLexical'),
              allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
          }) }}
@@ -111,6 +114,48 @@
                             {{ stimulus_action('lexical', 'closeSourceDialog') }}>{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
                     <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
                             {{ stimulus_action('lexical', 'confirmSource') }}>{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
+                </div>
+            </div>
+        </dialog>
+        {#- Iframe modal for the `iframe` button: the fields of an embed. Same self-contained
+            shape as the link modal (plain buttons, Enter confirms), and the URL field is a
+            plain text input on purpose — a relative src is a legitimate embed, so the check
+            is the controller's (the src must resolve to an http(s) URL), not the browser's. -#}
+        <dialog class="lexical__dialog lexical__dialog--iframe"
+                aria-label="{{ 'dialog.iframe.title'|trans({}, 'FlexibleUxLexical') }}"
+                {{ stimulus_target('lexical', 'iframeDialog')|stimulus_action('lexical', 'iframeDialogClosed', 'close') }}>
+            <div class="lexical__dialog-body">
+                <label class="lexical__dialog-label">
+                    {{ 'dialog.iframe.url_label'|trans({}, 'FlexibleUxLexical') }}
+                    <input type="text" inputmode="url" class="lexical__dialog-input" placeholder="https://" autofocus
+                           {{ stimulus_target('lexical', 'iframeUrlInput')|stimulus_action('lexical', 'iframeDialogKeydown', 'keydown') }}>
+                </label>
+                <div class="lexical__dialog-row">
+                    <label class="lexical__dialog-label">
+                        {{ 'dialog.iframe.width_label'|trans({}, 'FlexibleUxLexical') }}
+                        <input type="text" class="lexical__dialog-input" placeholder="560"
+                               {{ stimulus_target('lexical', 'iframeWidthInput')|stimulus_action('lexical', 'iframeDialogKeydown', 'keydown') }}>
+                    </label>
+                    <label class="lexical__dialog-label">
+                        {{ 'dialog.iframe.height_label'|trans({}, 'FlexibleUxLexical') }}
+                        <input type="text" class="lexical__dialog-input" placeholder="315"
+                               {{ stimulus_target('lexical', 'iframeHeightInput')|stimulus_action('lexical', 'iframeDialogKeydown', 'keydown') }}>
+                    </label>
+                </div>
+                <label class="lexical__dialog-label">
+                    {{ 'dialog.iframe.advisory_title_label'|trans({}, 'FlexibleUxLexical') }}
+                    <input type="text" class="lexical__dialog-input"
+                           {{ stimulus_target('lexical', 'iframeTitleInput')|stimulus_action('lexical', 'iframeDialogKeydown', 'keydown') }}>
+                </label>
+                <label class="lexical__dialog-check">
+                    <input type="checkbox" {{ stimulus_target('lexical', 'iframeFullscreen') }}>
+                    {{ 'dialog.iframe.allow_fullscreen'|trans({}, 'FlexibleUxLexical') }}
+                </label>
+                <div class="lexical__dialog-actions">
+                    <button type="button" class="lexical__dialog-btn"
+                            {{ stimulus_action('lexical', 'closeIframeDialog') }}>{{ 'dialog.cancel'|trans({}, 'FlexibleUxLexical') }}</button>
+                    <button type="button" class="lexical__dialog-btn lexical__dialog-btn--primary"
+                            {{ stimulus_action('lexical', 'confirmIframe') }}>{{ 'dialog.confirm'|trans({}, 'FlexibleUxLexical') }}</button>
                 </div>
             </div>
         </dialog>

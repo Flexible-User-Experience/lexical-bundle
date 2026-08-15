@@ -5,6 +5,44 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- An `iframe` toolbar button — the equivalent of CKEditor's *IFrame* dialog (and of the
+  `extraAllowedContent: 'iframe[*]'` a FOSCKEditor config needed to keep the markup) — sitting
+  right before `source` in the default toolbar, and optional like every other button.
+  - The modal takes the frame URL, an optional width and height (a number of pixels or a
+    percentage), an advisory `title` and an *allow fullscreen* checkbox; the embed is stored as a
+    plain `<iframe>`.
+  - Embeds are a Lexical node of their own (`assets/src/iframe-node.js`), so they survive the
+    round-trip through the editor: an `<iframe>` arriving from the `source` modal, a paste or
+    already-stored content keeps `src`, `width`, `height`, `title`, `allow`, `sandbox` and
+    `allowfullscreen` — enough for a YouTube or Maps embed — while everything else it carried is
+    normalised away like any other markup the model cannot represent.
+  - Inside the editor an embed renders as a live but inert preview: clicking it selects the block
+    (outlined, and `cut`/`copy` apply to it), <kbd>Backspace</kbd> or <kbd>Delete</kbd> removes it,
+    and pressing the toolbar button again reopens the dialog to edit it. Insert, edit and delete
+    are ordinary undoable steps. The preview carries `loading="lazy"` and, unless the embed brought
+    its own `sandbox`, a `sandbox="allow-scripts allow-same-origin"` that keeps the framed page from
+    navigating the page hosting the form away; neither attribute is exported.
+  - A frame source must resolve to an `http(s)` URL — relative URLs included, `javascript:` and
+    `data:` excluded. The rule is fixed (deliberately not `allowed_link_schemes`, which may carry
+    `mailto`/`tel`) and, like the link allowlist, enforced by a node transform wherever content
+    enters the document, so a disallowed embed is dropped whichever way it arrived.
+- The Lucide `globe` icon joins the bundled offline icon set, and the labels (`toolbar.iframe`,
+  `dialog.iframe.*`, `error.invalid_embed_url`, `error.invalid_embed_size`) ship translated in
+  English, Spanish and Catalan.
+
+### Changed
+
+- **BC break**: added the `LexicalBundle` namespace sublevel so several FlexibleUx bundles can
+  coexist without class collisions — the root namespace is now `FlexibleUx\LexicalBundle\` and
+  the bundle class `FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle`. Update your
+  `config/bundles.php` registration and any `FlexibleUx\Form\Type\LexicalFormType` import to
+  `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType`. The `flexible_ux_lexical` config key,
+  the service ids and the `FlexibleUxLexical` translation domain are unchanged.
+
 ## [0.6.1] - 2026-08-14
 
 ### Changed
@@ -199,7 +237,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.3.0...v0.4.0

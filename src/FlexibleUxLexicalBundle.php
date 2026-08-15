@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace FlexibleUx;
+namespace FlexibleUx\LexicalBundle;
 
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 /**
  * Registers the Lexical rich-text form type together with the assets that power it.
  *
- * On top of the tagged {@see \FlexibleUx\Form\Type\LexicalFormType} service, the bundle
+ * On top of the tagged {@see \FlexibleUx\LexicalBundle\Form\Type\LexicalFormType} service, the bundle
  * prepends two pieces of configuration so the field works with zero manual wiring:
  *
  *  - the `lexical_widget` form theme is appended to Twig's `form_themes`, and
@@ -56,23 +56,23 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
             ->end();
     }
 
-    public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
+    public function loadExtension(array $config, ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
-        $builder->setParameter('flexible_ux_lexical.toolbar', $config['toolbar']);
-        $builder->setParameter('flexible_ux_lexical.height', $config['height']);
-        $builder->setParameter('flexible_ux_lexical.allowed_link_schemes', $config['allowed_link_schemes']);
+        $container->setParameter('flexible_ux_lexical.toolbar', $config['toolbar']);
+        $container->setParameter('flexible_ux_lexical.height', $config['height']);
+        $container->setParameter('flexible_ux_lexical.allowed_link_schemes', $config['allowed_link_schemes']);
 
-        $container->import('../config/services.php');
+        $configurator->import('../config/services.php');
     }
 
-    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    public function prependExtension(ContainerConfigurator $configurator, ContainerBuilder $container): void
     {
-        if ($builder->hasExtension('framework')) {
+        if ($container->hasExtension('framework')) {
             // Expose the bundle's `assets/` dir to AssetMapper under the same name the
             // Stimulus controller is referenced by. Without this, vendored bundle assets
             // are NOT auto-discovered and the `lexical` controller cannot be resolved
             // ("Could not find an asset mapper path that points to the lexical controller").
-            $builder->prependExtensionConfig('framework', [
+            $container->prependExtensionConfig('framework', [
                 'asset_mapper' => [
                     'paths' => [
                         $this->getPath().'/assets' => '@flexible-ux/lexical-bundle',
@@ -81,14 +81,14 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
             ]);
         }
 
-        if ($builder->hasExtension('twig')) {
-            $builder->prependExtensionConfig('twig', [
+        if ($container->hasExtension('twig')) {
+            $container->prependExtensionConfig('twig', [
                 'form_themes' => ['@FlexibleUxLexical/form/lexical_widget.html.twig'],
             ]);
         }
 
-        if ($builder->hasExtension('ux_icons')) {
-            $builder->prependExtensionConfig('ux_icons', [
+        if ($container->hasExtension('ux_icons')) {
+            $container->prependExtensionConfig('ux_icons', [
                 'icon_sets' => [
                     'lexical' => ['path' => $this->getPath().'/assets/icons'],
                 ],

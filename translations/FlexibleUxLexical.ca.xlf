@@ -98,6 +98,10 @@
                 <source>toolbar.unlink</source>
                 <target>Suprimeix l'enllaç</target>
             </trans-unit>
+            <trans-unit id="toolbar.iframe">
+                <source>toolbar.iframe</source>
+                <target>Insereix un IFrame</target>
+            </trans-unit>
             <trans-unit id="toolbar.source">
                 <source>toolbar.source</source>
                 <target>Edita el codi font</target>
@@ -122,6 +126,30 @@
                 <source>dialog.source.label</source>
                 <target>Codi HTML</target>
             </trans-unit>
+            <trans-unit id="dialog.iframe.title">
+                <source>dialog.iframe.title</source>
+                <target>Insereix un IFrame</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.url_label">
+                <source>dialog.iframe.url_label</source>
+                <target>URL del marc</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.width_label">
+                <source>dialog.iframe.width_label</source>
+                <target>Amplada</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.height_label">
+                <source>dialog.iframe.height_label</source>
+                <target>Alçada</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.advisory_title_label">
+                <source>dialog.iframe.advisory_title_label</source>
+                <target>Títol informatiu</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.allow_fullscreen">
+                <source>dialog.iframe.allow_fullscreen</source>
+                <target>Permet la pantalla completa</target>
+            </trans-unit>
             <trans-unit id="dialog.cancel">
                 <source>dialog.cancel</source>
                 <target>Cancel·la</target>
@@ -133,6 +161,14 @@
             <trans-unit id="error.invalid_url">
                 <source>error.invalid_url</source>
                 <target>Introduïu un URL vàlid (http, https, mailto o tel).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_url">
+                <source>error.invalid_embed_url</source>
+                <target>Introduïu un URL vàlid per al marc (http o https).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_size">
+                <source>error.invalid_embed_size</source>
+                <target>L'amplada i l'alçada han de ser un nombre de píxels o un percentatge (per exemple, 560 o 100%).</target>
             </trans-unit>
             <trans-unit id="error.clipboard_denied">
                 <source>error.clipboard_denied</source>

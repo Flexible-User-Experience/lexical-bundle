@@ -8,13 +8,13 @@ form field built on Meta's [Lexical](https://lexical.dev), wired for
 
 The field renders a toolbar (undo / redo, cut / copy / paste — including paste from Word —,
 bold, italic, underline, strikethrough, subscript / superscript, remove format, text alignment,
-bulleted / numbered lists, indentation, link, unlink, HTML source editing) and a
+bulleted / numbered lists, indentation, link, unlink, iframe embeds, HTML source editing) and a
 contenteditable surface around a hidden `<textarea>`. The editor reads the
 textarea's HTML on load and writes HTML back on every change, so it is a drop-in replacement for a
 plain textarea and **degrades to that textarea when JavaScript is disabled**. No build step is
 required — everything runs through AssetMapper's importmap.
 
-![The rendered LexicalFormType field: the toolbar (history, clipboard, text formats, alignment, lists, indentation, link and source-code buttons) above the editable surface](docs/screenshot.png)
+![The rendered LexicalFormType field: the toolbar (history, clipboard, text formats, alignment, lists, indentation, link, iframe and source-code buttons) above the editable surface](docs/screenshot.png)
 
 ## Requirements
 
@@ -64,7 +64,7 @@ alike):
 // config/bundles.php
 return [
     // ...
-    FlexibleUx\FlexibleUxLexicalBundle::class => ['all' => true],
+    FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle::class => ['all' => true],
 ];
 ```
 
@@ -74,7 +74,7 @@ automatically; the editor's CSS is imported by the controller, so there is nothi
 ## Usage
 
 ```php
-use FlexibleUx\Form\Type\LexicalFormType;
+use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 
 $builder->add('description', LexicalFormType::class);
 ```
@@ -94,7 +94,7 @@ $builder->add('description', LexicalFormType::class, [
 
 | Option                 | Type       | Default                                    | Description                                             |
 |------------------------|------------|--------------------------------------------|---------------------------------------------------------|
-| `toolbar`              | `string[]` | all 24 buttons in eight `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 25 buttons in eight `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                                  | Minimum editable height (any CSS length).               |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`          | URL schemes the link modal accepts.                     |
 
@@ -105,13 +105,20 @@ Available buttons:
 `undo` · `redo` · `cut` · `copy` · `paste` · `paste-word` · `bold` · `italic` · `underline` ·
 `strikethrough` · `subscript` · `superscript` · `remove-format` · `align-left` · `align-center` ·
 `align-right` · `align-justify` · `bullet` · `number` · `indent` · `outdent` · `link` · `unlink` ·
-`source`
+`iframe` · `source`
 
 The `paste` and `paste-word` buttons read the system clipboard through the asynchronous Clipboard
 API, so they need a secure context and (browser-dependent) the user's permission; when access is
 denied the editor shows a translated hint to paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> instead.
 `paste-word` additionally cleans Word's markup and rebuilds its lists — see
 [`docs/index.md`](docs/index.md) for details.
+
+The `iframe` button embeds external content (a video, a map, a form) the way CKEditor's *IFrame*
+dialog did: a modal asks for the URL, an optional width and height, an advisory title and whether
+fullscreen is allowed, and the embed is stored as a plain `<iframe>`. Inside the editor it renders
+as a live but inert preview — click it to select it (<kbd>Backspace</kbd> removes it, the toolbar
+button reopens the dialog to edit it). The frame source must resolve to an `http(s)` URL; see
+[`docs/index.md`](docs/index.md) for what an imported `<iframe>` keeps.
 
 The toolbar renders **exactly the order you give**, and `|` draws a separator — so grouping is
 entirely yours to decide:
@@ -166,14 +173,15 @@ for instance, has no alignment buttons, so no field gets them unless it override
 Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 
 The editor stores **HTML**. When you render that HTML on a public page, output it as trusted markup
-(e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` by the editor, but you remain
-responsible for sanitising any HTML that reaches the field from other sources.
+(e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` and embeds to `http(s)` frame
+sources by the editor, but you remain responsible for sanitising any HTML that reaches the field
+from other sources.
 
 ## How it works
 
 The bundle is deliberately split into four layers so each can be understood and overridden on its own:
 
-- **PHP** — `FlexibleUx\Form\Type\LexicalFormType` exposes the `toolbar` / `height` options as view
+- **PHP** — `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType` exposes the `toolbar` / `height` options as view
   variables.
 - **HTML** — the `lexical_widget` Twig form theme renders the toolbar, the editable surface and the
   link modal.
