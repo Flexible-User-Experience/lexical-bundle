@@ -110,6 +110,30 @@
     text-decoration: underline;
 }
 
+/* Embedded <iframe> (the `iframe` toolbar button). The wrapper is the block Lexical
+   selects; the frame inside is the real embed, kept inert so a click selects the block
+   instead of disappearing into the framed page. Only the editor needs these rules — the
+   stored markup is a bare <iframe>, styled by the frontend that renders it. */
+.lexical__iframe {
+    margin: 0 0 8px;
+    /* Kills the descender gap under the replaced element. The wrapper stays a full-width
+       block (so a frame sized in % has something to be a percentage of) while the outline
+       below sits on the frame itself, where it hugs the embed. */
+    line-height: 0;
+}
+
+.lexical__iframe iframe {
+    max-width: 100%;
+    border: 0;
+    outline: 1px dashed #d2d6de;
+    background: #f7f7f7;
+    pointer-events: none;
+}
+
+.lexical__iframe.is-selected iframe {
+    outline: 2px solid #3c8dbc;
+}
+
 .lexical__bold {
     font-weight: bold;
 }
@@ -207,6 +231,22 @@
 /* Source modal — same chrome as the link modal, sized for editing markup. */
 .lexical__dialog--source {
     width: 640px;
+}
+
+/* Iframe modal — the link modal's chrome, one size up for its extra fields. The row puts
+   width and height side by side; it collapses on narrow screens. */
+.lexical__dialog--iframe {
+    width: 420px;
+}
+
+.lexical__dialog-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.lexical__dialog-row .lexical__dialog-label {
+    flex: 1 1 120px;
 }
 
 .lexical__dialog-textarea {
