@@ -284,5 +284,12 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.ifra
   `prependExtension()` can add the AssetMapper path.
 - **`Unable to find an asset ... "lexical"`.** The Lexical packages aren't in your importmap — run the
   `importmap:require` command shown in the setup steps.
+- **`Error loading controller "lexical": Failed to fetch dynamically imported module: …/src/controller-<digest>.js`.**
+  The browser could not fetch the controller or one of its own modules — Chrome reports the entry
+  even when a dependency is what 404s, so check the network tab for the actual missing file. On
+  0.7.0 this was a bug in the bundle itself (see the changelog); upgrade. Otherwise the usual cause
+  is a stale `public/assets/` from an earlier `asset-map:compile`: the rendered importmap points at
+  the new digests while the files on disk still carry the old ones. Recompile (or delete
+  `public/assets/` in dev, where assets are served on the fly).
 - **Icons don't render.** Ensure `symfony/ux-icons` is installed; the bundle registers the `lexical`
   icon set automatically, but the UX Icons Twig function must be available.
