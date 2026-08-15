@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `iframe` button now uses the Lucide `app-window` icon instead of `globe` (which leaves the
+  bundled icon set). CKEditor's globe was the obvious starting point, but in this toolbar it reads
+  as "the web" two buttons away from `link`, while a window frame says "an embedded page" — and,
+  unlike a second code glyph, it cannot be confused with the `source` button beside it.
+
 ### Fixed
 
 - The `lexical` controller failed to load in a consuming application with
