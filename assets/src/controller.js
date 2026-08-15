@@ -49,7 +49,16 @@ import {
     $findMatchingParent,
     $insertNodeToNearestRoot,
 } from '@lexical/utils';
-import { IframeNode, $createIframeNode, $isIframeNode } from './iframe-node.js';
+// Imported as a namespace, then unpacked: AssetMapper finds the imports it has to rewrite
+// with a regex whose named-import clause is `[\w\s{},*]` — no `$` — so writing this as
+// `import { IframeNode, $createIframeNode, … }` hides the statement from it. The relative
+// path then keeps its undigested form in the served file and 404s in the browser
+// ("Failed to fetch dynamically imported module"). A namespace import matches the pattern,
+// so the path is rewritten to the digested one. Bare imports are unaffected: they resolve
+// through the importmap by name, whatever their clause looks like.
+import * as iframeNodeModule from './iframe-node.js';
+
+const { IframeNode, $createIframeNode, $isIframeNode } = iframeNodeModule;
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.

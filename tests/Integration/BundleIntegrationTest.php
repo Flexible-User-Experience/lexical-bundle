@@ -8,6 +8,7 @@ use FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle;
 use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use FlexibleUx\LexicalBundle\Tests\Fixtures\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\AssetMapper\ImportMap\JavaScriptImport;
 use Symfony\Component\Form\FormFactoryInterface;
 use Twig\Environment;
 
@@ -67,6 +68,29 @@ final class BundleIntegrationTest extends KernelTestCase
 
         self::assertNotNull($asset, 'The bundle must register its assets/ directory with AssetMapper.');
         self::assertStringStartsWith('@flexible-ux/lexical-bundle/', $asset->logicalPath);
+    }
+
+    public function testControllerRelativeImportsAreSeenByAssetMapper(): void
+    {
+        self::bootKernel();
+
+        // Regression guard for the shape of the controller's own `import` statements.
+        // AssetMapper discovers imports with a regex whose named-import clause is
+        // `[\w\s{},*]` — no `$` — so `import { $createIframeNode } from './iframe-node.js'`
+        // is invisible to it: no importmap entry is generated for the relative module, the
+        // browser requests the undigested path and the whole controller fails to load with
+        // "Failed to fetch dynamically imported module". Every relative import must
+        // therefore be written in a form the compiler matches (a namespace import).
+        $controllerPath = (new FlexibleUxLexicalBundle())->getPath().'/assets/src/controller.js';
+        $asset = self::getContainer()->get('test.asset_mapper')->getAssetFromSourcePath($controllerPath);
+
+        $imported = array_map(
+            static fn (JavaScriptImport $import): string => $import->assetLogicalPath,
+            $asset->getJavaScriptImports(),
+        );
+
+        self::assertContains('@flexible-ux/lexical-bundle/src/iframe-node.js', $imported);
+        self::assertContains('@flexible-ux/lexical-bundle/styles/lexical.css', $imported);
     }
 
     public function testWidgetRendersEditorMarkup(): void

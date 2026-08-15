@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The `lexical` controller failed to load in a consuming application with
+  `Failed to fetch dynamically imported module: .../src/controller-<digest>.js`, leaving the
+  plain textarea in place. AssetMapper discovers the imports it has to rewrite with a regex
+  whose named-import clause is `[\w\s{},*]` — no `$` — so the controller's
+  `import { IframeNode, $createIframeNode, … } from './iframe-node.js'` was invisible to it:
+  no importmap entry was generated for the relative module, and the browser requested the
+  undigested `iframe-node.js`, which does not exist. The statement is now a namespace import
+  the compiler matches, and an integration test asserts every relative import of the
+  controller is discovered. Consumers on 0.7.0 need no configuration change — only this
+  release. Bare imports were never affected: they resolve through the importmap by name.
+
+## [0.7.0] - 2026-08-15
+
 ### Added
 
 - An `iframe` toolbar button — the equivalent of CKEditor's *IFrame* dialog (and of the
@@ -237,7 +252,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.4.0...v0.5.0
