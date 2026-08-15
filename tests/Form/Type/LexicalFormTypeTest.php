@@ -37,7 +37,7 @@ final class LexicalFormTypeTest extends TypeTestCase
             '|',
             'link', 'unlink',
             '|',
-            'source',
+            'iframe', 'source',
         ], $view->vars['lexical_toolbar']);
         self::assertSame('|', $view->vars['lexical_separator']);
         self::assertSame('200px', $view->vars['lexical_height']);
@@ -88,6 +88,18 @@ final class LexicalFormTypeTest extends TypeTestCase
         ])->createView();
 
         self::assertSame(['bold', '|', 'italic'], $view->vars['lexical_toolbar']);
+    }
+
+    public function testEmbedButtonIsOptionalLikeEveryOther(): void
+    {
+        // `iframe` is a toolbar entry like the rest: a field that wants embeds lists it,
+        // one that does not simply leaves it out.
+        $view = $this->factory->create(LexicalFormType::class, null, [
+            'toolbar' => ['bold', '|', 'iframe'],
+        ])->createView();
+
+        self::assertSame(['bold', '|', 'iframe'], $view->vars['lexical_toolbar']);
+        self::assertContains('iframe', LexicalFormType::AVAILABLE_BUTTONS);
     }
 
     public function testRejectsUnknownToolbarEntry(): void

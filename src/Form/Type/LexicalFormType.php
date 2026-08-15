@@ -59,7 +59,7 @@ final class LexicalFormType extends AbstractType
         'bullet', 'number',
         'indent', 'outdent',
         'link', 'unlink',
-        'source',
+        'iframe', 'source',
     ];
 
     /**
@@ -82,7 +82,7 @@ final class LexicalFormType extends AbstractType
         self::SEPARATOR,
         'link', 'unlink',
         self::SEPARATOR,
-        'source',
+        'iframe', 'source',
     ];
 
     /**

@@ -94,10 +94,11 @@ final class BundleIntegrationTest extends KernelTestCase
         // Icon resolved from the shipped `lexical` UX Icons set.
         self::assertStringContainsString('<svg', $html);
 
-        // Translated label (default locale en) and the two modals (link + source).
+        // Translated label (default locale en) and the three modals (link + source + iframe).
         self::assertStringContainsString('Bold', $html);
         self::assertStringContainsString('class="lexical__dialog"', $html);
         self::assertStringContainsString('data-lexical-target="sourceDialog"', $html);
+        self::assertStringContainsString('data-lexical-target="iframeDialog"', $html);
 
         // Initial HTML round-trips into the hidden textarea.
         self::assertStringContainsString('<textarea', $html);
@@ -126,7 +127,7 @@ final class BundleIntegrationTest extends KernelTestCase
         }
 
         // The default groups the buttons with seven separators
-        // (history · clipboard · text · align · list · indent · link · source).
+        // (history · clipboard · text · align · list · indent · link · embed + source).
         self::assertSame(7, substr_count($html, 'lexical__sep'));
     }
 
