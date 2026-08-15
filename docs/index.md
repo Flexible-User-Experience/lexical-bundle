@@ -69,7 +69,7 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 24 buttons, in eight groups   | Ordered entries: button names and `\|` separators. |
+| `toolbar`              | `string[]` | all 25 buttons, in eight groups   | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
 
@@ -87,7 +87,7 @@ $builder->add('description', LexicalFormType::class, [
 The button names are `undo`, `redo`, `cut`, `copy`, `paste`, `paste-word`, `bold`, `italic`,
 `underline`, `strikethrough`, `subscript`, `superscript`, `remove-format`, `align-left`,
 `align-center`, `align-right`, `align-justify`, `bullet`, `number`, `indent`, `outdent`, `link`,
-`unlink` and `source`.
+`unlink`, `iframe` and `source`.
 
 ### Grouping the toolbar
 
@@ -164,6 +164,28 @@ the four entries can also be cherry-picked individually. An editor without the b
 **preserves** any `text-align` already present in the stored (or pasted) HTML when the content is
 edited; opting out only removes the ability to change alignment from the toolbar.
 
+The `iframe` button embeds external content — a video, a map, a booking form — the way CKEditor's
+*IFrame* dialog did (the setup this replaces needed `extraAllowedContent: 'iframe[*]'` for the same
+reason: an editor keeps only the markup it knows about). The modal asks for the frame URL, an
+optional width and height, an advisory `title` and whether fullscreen is allowed; the result is
+stored as a plain `<iframe>`, which is what the frontend renders.
+
+Inside the editor the embed is a block of its own, rendered as a **live but inert preview**: the
+real frame, so editing stays WYSIWYG, with pointer events off so a click selects the block instead
+of disappearing into the framed page. A selected embed is outlined, <kbd>Backspace</kbd> or
+<kbd>Delete</kbd> removes it, and pressing the toolbar button again reopens the dialog to edit it
+(the button renders as "active" while an embed is selected). Insert, edit and delete are ordinary
+undoable steps. The preview additionally carries `loading="lazy"` and — unless the embed brought a
+`sandbox` of its own — a `sandbox="allow-scripts allow-same-origin"` that lets the framed page
+render but not navigate the page hosting the form away. Neither attribute is exported.
+
+An `<iframe>` that arrives as markup (the `source` modal, a paste, or stored content being loaded)
+keeps `src`, `width`, `height`, `title`, `allow`, `sandbox` and `allowfullscreen` — enough for a
+YouTube or Maps embed to survive a round-trip unchanged. Anything else it carried (`frameborder`,
+`referrerpolicy`, …) is normalised away like any other markup the model cannot represent. Width and
+height are the HTML dimension attributes, so the dialog takes a number of pixels or a percentage
+(`560`, `100%`); leave them empty to fall back to the browser's default frame size.
+
 The `source` button opens a modal where the document can be edited as plain-text HTML. Confirming
 re-imports the markup through Lexical's model, so only markup the editor can represent survives —
 anything else is normalised away — and the whole swap lands as a single undoable history step.
@@ -176,8 +198,9 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 |-------|------|----------------|
 | PHP   | `src/Form/Type/LexicalFormType.php` | Declares options, exposes `lexical_toolbar` / `lexical_height` view vars. |
 | Bundle| `src/FlexibleUxLexicalBundle.php`   | Registers the tagged service, prepends the form theme + icon set. |
-| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, link `<dialog>`. |
+| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, the link/source/iframe `<dialog>`s. |
 | JS    | `assets/src/controller.js`          | Mounts Lexical, syncs the textarea, drives the toolbar. |
+| JS    | `assets/src/iframe-node.js`         | The `IframeNode` the `iframe` button inserts (import, export, preview). |
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
 | Icons | `assets/icons/*.svg`                | Lucide glyphs served as `lexical:<name>`. |
 
@@ -223,8 +246,9 @@ your own stylesheet — the bundle's CSS is plain, unscoped and low-specificity 
 
 All labels live in the `FlexibleUxLexical` translation domain (English, Spanish and Catalan ship with
 the bundle). Add or override a locale by placing `translations/FlexibleUxLexical.<locale>.xlf` in your
-application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.cancel`, `dialog.confirm`,
-`error.invalid_url`, `error.clipboard_denied`.
+application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.iframe.*`, `dialog.cancel`,
+`dialog.confirm`, `error.invalid_url`, `error.invalid_embed_url`, `error.invalid_embed_size`,
+`error.clipboard_denied`.
 
 ## Security notes
 
@@ -236,6 +260,17 @@ application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.canc
   not in the list is unwrapped (its text stays, the link is dropped). Note the last point: content
   that already contains a disallowed link loses that link the next time it is opened and saved
   through the editor. Widening the list widens what can be stored, so add schemes deliberately.
+- An embed's `src` is held to a fixed, narrower rule than links: it must resolve to an `http(s)` URL.
+  Relative URLs are fine (they resolve against the page), `javascript:` and `data:` are not — a frame
+  *runs* what it loads, so this list is not configurable, and `allowed_link_schemes` (which may
+  legitimately carry `mailto`/`tel`, or be widened) has no say over it. As with links, the rule is
+  enforced by a node transform at the point where every path into the document converges, so an
+  `<iframe>` with a disallowed `src` is dropped whether it came from the dialog, the `source` modal, a
+  paste or already-stored content — the same "opening and saving strips it" caveat applies.
+- A `sandbox` attribute already on an imported `<iframe>` is preserved rather than dropped, so
+  round-tripping stored content through the editor cannot silently widen what an embed may do. The
+  editor does not add one to the exported markup: sandboxing new embeds is the frontend's call, not
+  the editor's.
 - The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
   sanitise anything that can reach the field from outside this editor.
 
