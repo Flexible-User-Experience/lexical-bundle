@@ -5,7 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.1] - 2026-08-15
+
+### Changed
+
+- The `iframe` button now uses the Lucide `app-window` icon instead of `globe` (which leaves the
+  bundled icon set). CKEditor's globe was the obvious starting point, but in this toolbar it reads
+  as "the web" two buttons away from `link`, while a window frame says "an embedded page" — and,
+  unlike a second code glyph, it cannot be confused with the `source` button beside it.
 
 ### Fixed
 
@@ -252,7 +259,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.5.0...v0.6.0
