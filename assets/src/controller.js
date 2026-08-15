@@ -4,13 +4,19 @@ import { Controller } from '@hotwired/stimulus';
 import {
     createEditor,
     $getRoot,
+    $getNodeByKey,
+    $getNearestNodeFromDOMNode,
     $getSelection,
     $setSelection,
+    $createNodeSelection,
     $isRangeSelection,
+    $isNodeSelection,
     $isElementNode,
     $isTextNode,
     $insertNodes,
+    $nodesOfType,
     $createParagraphNode,
+    CLICK_COMMAND,
     FORMAT_TEXT_COMMAND,
     FORMAT_ELEMENT_COMMAND,
     INDENT_CONTENT_COMMAND,
@@ -37,7 +43,13 @@ import {
 } from '@lexical/list';
 import { LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, $toggleLink } from '@lexical/link';
 import { registerHistory, createEmptyHistoryState } from '@lexical/history';
-import { mergeRegister, $getNearestNodeOfType, $findMatchingParent } from '@lexical/utils';
+import {
+    mergeRegister,
+    $getNearestNodeOfType,
+    $findMatchingParent,
+    $insertNodeToNearestRoot,
+} from '@lexical/utils';
+import { IframeNode, $createIframeNode, $isIframeNode } from './iframe-node.js';
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.
@@ -53,6 +65,9 @@ const THEME = {
     },
     list: { ul: 'lexical__ul', ol: 'lexical__ol', listitem: 'lexical__li' },
     link: 'lexical__link',
+    // Read by IframeNode.createDOM() rather than by Lexical itself, so the embed's
+    // wrapper class is declared here with all the others instead of inside the node.
+    iframe: 'lexical__iframe',
 };
 
 // Toolbar commands handled straight by Lexical's FORMAT_TEXT_COMMAND. These are the
@@ -97,18 +112,36 @@ const ALIGN_FORMATS = {
 // HTML that a frontend renders as raw markup cannot carry an XSS payload.
 const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
 
+// Schemes an `<iframe>` may be pointed at. Deliberately fixed and narrower than
+// `allowed_link_schemes`: that list legitimately carries `mailto`/`tel` (and can be
+// widened per field), none of which means anything as a frame source — while a frame
+// *runs* what it loads, so `javascript:` and `data:` must never reach one.
+const EMBEDDABLE_SCHEMES = ['http:', 'https:'];
+
+// What the iframe dialog accepts as a width or height: a number of pixels or a
+// percentage, the two values the HTML dimension attributes take. Empty means "unset".
+const EMBED_SIZE_PATTERN = /^\d+(\.\d+)?%?$/;
+
 /**
  * Behaviour for FlexibleUx\Form\Type\LexicalFormType. The `lexical_widget` form theme
  * owns the markup — toolbar (icons via `ux_icon`), editable surface, the hidden
- * textarea and the link modal — and this controller wires Meta's Lexical to it: it
- * mounts the editor on the `editable` target and keeps the `input` target (the
- * textarea) in sync with the editor's HTML. Buttons reach it through Stimulus
+ * textarea and the link, source and iframe modals — and this controller wires Meta's
+ * Lexical to it: it mounts the editor on the `editable` target and keeps the `input`
+ * target (the textarea) in sync with the editor's HTML. Buttons reach it through Stimulus
  * actions/targets.
  */
 export default class extends Controller {
-    static targets = ['input', 'editable', 'button', 'dialog', 'urlInput', 'newTab', 'sourceDialog', 'sourceInput'];
+    static targets = [
+        'input', 'editable', 'button',
+        'dialog', 'urlInput', 'newTab',
+        'sourceDialog', 'sourceInput',
+        'iframeDialog', 'iframeUrlInput', 'iframeWidthInput', 'iframeHeightInput', 'iframeTitleInput',
+        'iframeFullscreen',
+    ];
     static values = {
         invalidUrlMessage: String,
+        invalidEmbedUrlMessage: String,
+        invalidEmbedSizeMessage: String,
         clipboardDeniedMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
     };
@@ -159,6 +192,8 @@ export default class extends Controller {
             this.#toggleLink();
         } else if ('unlink' === command) {
             this.#removeLink();
+        } else if ('iframe' === command) {
+            this.#openIframe();
         } else if ('source' === command) {
             this.#openSource();
         }
@@ -259,13 +294,102 @@ export default class extends Controller {
         this.sourceDialogTarget.close();
     }
 
+    // Insert the embed described by the iframe modal, or update the one being edited.
+    // Editing replaces the node rather than mutating it, carrying over the attributes the
+    // dialog does not expose (`allow`, `sandbox`), so a pasted embed keeps them.
+    confirmIframe() {
+        const props = {
+            src: this.iframeUrlInputTarget.value.trim(),
+            width: this.iframeWidthInputTarget.value.trim(),
+            height: this.iframeHeightInputTarget.value.trim(),
+            title: this.iframeTitleInputTarget.value.trim(),
+            allowFullscreen: this.iframeFullscreenTarget.checked,
+        };
+        this.iframeUrlInputTarget.setCustomValidity(
+            this.#isEmbeddableUrl(props.src) ? '' : this.invalidEmbedUrlMessageValue,
+        );
+        [
+            [this.iframeWidthInputTarget, props.width],
+            [this.iframeHeightInputTarget, props.height],
+        ].forEach(([field, value]) => {
+            field.setCustomValidity(
+                '' === value || EMBED_SIZE_PATTERN.test(value) ? '' : this.invalidEmbedSizeMessageValue,
+            );
+        });
+        const invalid = [
+            this.iframeUrlInputTarget,
+            this.iframeWidthInputTarget,
+            this.iframeHeightInputTarget,
+        ].find((field) => !field.checkValidity());
+        if (undefined !== invalid) {
+            invalid.reportValidity();
+
+            return;
+        }
+
+        const key = this.iframeKey;
+        this.iframeDialogTarget.close();
+        this.iframeDialogClosed();
+        this.editor.update(() => {
+            const edited = null === key ? null : $getNodeByKey(key);
+            if ($isIframeNode(edited)) {
+                edited.replace($createIframeNode({ ...edited.getProps(), ...props }));
+
+                return;
+            }
+            // Showing the modal dropped the selection, so restore the stashed clone: the
+            // embed lands where the caret was, not at the end of the document.
+            if (this.iframeSelection) {
+                $setSelection(this.iframeSelection.clone());
+            }
+            $insertNodeToNearestRoot($createIframeNode(props));
+        });
+        this.iframeKey = null;
+        this.iframeSelection = null;
+        this.editor.focus();
+        this.markChanged();
+    }
+
+    // Dismiss the iframe modal without touching the document (Cancel button).
+    closeIframeDialog() {
+        this.iframeDialogTarget.close();
+        this.iframeDialogClosed();
+        this.iframeKey = null;
+        this.iframeSelection = null;
+    }
+
+    // Enter in any of the text fields confirms (there is no form to submit).
+    iframeDialogKeydown(event) {
+        if ('Enter' === event.key) {
+            event.preventDefault();
+            this.confirmIframe();
+        }
+    }
+
+    // Same housekeeping as the link modal: these fields have no name but do sit inside the
+    // surrounding <form>, so a leftover invalid value would make that form unsubmittable
+    // while the dialog is hidden. Wired to the dialog's `close` event as well, to cover
+    // Escape. The next open repopulates them from the node.
+    iframeDialogClosed() {
+        [
+            this.iframeUrlInputTarget,
+            this.iframeWidthInputTarget,
+            this.iframeHeightInputTarget,
+            this.iframeTitleInputTarget,
+        ].forEach((field) => {
+            field.setCustomValidity('');
+            field.value = '';
+        });
+        this.iframeFullscreenTarget.checked = false;
+    }
+
     // --- Editor ------------------------------------------------------------
 
     #createEditor() {
         const editor = createEditor({
             namespace: 'lexical',
             editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
-            nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode],
+            nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
             theme: THEME,
             onError: (error) => console.error('[lexical]', error),
         });
@@ -312,6 +436,38 @@ export default class extends Controller {
                 linkNode.getChildren().forEach((child) => linkNode.insertBefore(child));
                 linkNode.remove();
             }),
+            // The same treatment for embeds, at the same single point of convergence: an
+            // <iframe> whose src is not an http(s) URL is dropped whichever way it entered
+            // the document. There is no text to keep, so the whole node goes.
+            editor.registerNodeTransform(IframeNode, (iframeNode) => {
+                if (!this.#isEmbeddableUrl(iframeNode.getSrc())) {
+                    iframeNode.remove();
+                }
+            }),
+            // An embed's preview is inert (pointer events off), so a click lands on its
+            // wrapper: turn that into a NodeSelection, which is what makes the block
+            // highlight, Backspace/Delete remove it and the toolbar button edit it.
+            editor.registerCommand(
+                CLICK_COMMAND,
+                (event) => {
+                    const wrapper = event.target instanceof Element
+                        ? event.target.closest(`.${THEME.iframe}`)
+                        : null;
+                    if (null === wrapper) {
+                        return false;
+                    }
+                    const node = $getNearestNodeFromDOMNode(wrapper);
+                    if (!$isIframeNode(node)) {
+                        return false;
+                    }
+                    const selection = $createNodeSelection();
+                    selection.add(node.getKey());
+                    $setSelection(selection);
+
+                    return true;
+                },
+                COMMAND_PRIORITY_LOW,
+            ),
             // The undo/redo buttons mirror the history stacks, whose availability only
             // ever arrives through these two payloads — refresh as soon as one does.
             editor.registerCommand(
@@ -378,7 +534,9 @@ export default class extends Controller {
 
     #syncOut(editorState) {
         editorState.read(() => {
-            const isEmpty = '' === $getRoot().getTextContent().trim();
+            // Embeds carry no text, so a document holding nothing but one is empty by the
+            // text-content measure — and would be saved as an empty string.
+            const isEmpty = '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
             this.inputTarget.value = isEmpty ? '' : $generateHtmlFromNodes(this.editor, null);
         });
         this.inputTarget.dispatchEvent(new Event('input', { bubbles: true }));
@@ -423,6 +581,48 @@ export default class extends Controller {
     // this only fires when there is something to remove.
     #removeLink() {
         this.editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+    }
+
+    // Open the iframe modal. With an embed selected it edits that one (fields pre-filled,
+    // the button rendering as active); otherwise it inserts a new one at the caret — and,
+    // as in #toggleLink, the modal takes the focus and with it Lexical's selection, so
+    // stash a clone for `confirmIframe` to restore.
+    #openIframe() {
+        let props = null;
+        this.iframeKey = null;
+        this.iframeSelection = this.editor.getEditorState().read(() => {
+            const node = this.#selectedIframeNode();
+            if (null !== node) {
+                this.iframeKey = node.getKey();
+                props = node.getProps();
+            }
+            const selection = $getSelection();
+
+            return $isRangeSelection(selection) ? selection.clone() : null;
+        });
+        this.iframeUrlInputTarget.value = props?.src ?? '';
+        this.iframeWidthInputTarget.value = props?.width ?? '';
+        this.iframeHeightInputTarget.value = props?.height ?? '';
+        this.iframeTitleInputTarget.value = props?.title ?? '';
+        this.iframeFullscreenTarget.checked = props?.allowFullscreen ?? false;
+        this.iframeDialogTarget.showModal();
+        this.iframeUrlInputTarget.select();
+    }
+
+    // An iframe src is accepted when it resolves to an http(s) URL. Relative URLs are
+    // fine — they resolve against the page, which is where the stored HTML is rendered —
+    // while `javascript:`, `data:` and malformed input are not. Also used by the node
+    // transform, so this is the single rule every embed in the document has passed.
+    #isEmbeddableUrl(value) {
+        const src = String(value).trim();
+        if ('' === src) {
+            return false;
+        }
+        try {
+            return EMBEDDABLE_SCHEMES.includes(new URL(src, document.baseURI).protocol);
+        } catch {
+            return false;
+        }
     }
 
     // Open the source modal pre-filled with the editor's current HTML — the exact
@@ -586,9 +786,23 @@ export default class extends Controller {
     }
 
     #refreshToolbar(editorState) {
-        const state = { formats: {}, align: null, listType: null, link: false, collapsed: true };
+        const state = {
+            formats: {}, align: null, listType: null, link: false, collapsed: true, iframeKeys: new Set(),
+        };
         editorState.read(() => {
             const selection = $getSelection();
+            // A click on an embed selects the node itself rather than a range of text.
+            if ($isNodeSelection(selection)) {
+                selection.getNodes().forEach((node) => {
+                    if ($isIframeNode(node)) {
+                        state.iframeKeys.add(node.getKey());
+                    }
+                });
+                // Not a caret: there is a selected node to cut or copy.
+                state.collapsed = false;
+
+                return;
+            }
             if (!$isRangeSelection(selection)) {
                 return;
             }
@@ -613,6 +827,9 @@ export default class extends Controller {
                 active = state.listType === command;
             } else if ('link' === command) {
                 active = state.link;
+            } else if ('iframe' === command) {
+                // Lit while an embed is selected: pressing the button then edits that one.
+                active = 0 !== state.iframeKeys.size;
             } else if ('unlink' === command) {
                 // Nothing to unlink unless the caret sits inside a link.
                 button.disabled = !state.link;
@@ -625,6 +842,18 @@ export default class extends Controller {
                 button.disabled = state.collapsed;
             }
             button.classList.toggle('is-active', active);
+        });
+
+        this.#refreshEmbedSelection(state.iframeKeys);
+    }
+
+    // Lexical paints no selection of its own on a decorator, so mirror the current
+    // NodeSelection onto the embed wrappers — without it, clicking an embed looks like
+    // nothing happened, even though Backspace would now remove it.
+    #refreshEmbedSelection(keys) {
+        const selected = new Set([...keys].map((key) => this.editor.getElementByKey(key)));
+        this.editableTarget.querySelectorAll(`.${THEME.iframe}`).forEach((wrapper) => {
+            wrapper.classList.toggle('is-selected', selected.has(wrapper));
         });
     }
 
@@ -654,6 +883,13 @@ export default class extends Controller {
         const listNode = $getNearestNodeOfType(selection.anchor.getNode(), ListNode);
 
         return listNode ? listNode.getListType() : null;
+    }
+
+    // The selected embed, or null when the selection is not a node selection holding one.
+    #selectedIframeNode() {
+        const selection = $getSelection();
+
+        return $isNodeSelection(selection) ? (selection.getNodes().find($isIframeNode) ?? null) : null;
     }
 
     // The LinkNode at the caret, or null when the selection is not in a link.
