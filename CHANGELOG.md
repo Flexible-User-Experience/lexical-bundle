@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.1] - 2026-08-15
+## [0.7.2] - 2026-08-15
 
 ### Changed
 
@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bundled icon set). CKEditor's globe was the obvious starting point, but in this toolbar it reads
   as "the web" two buttons away from `link`, while a window frame says "an embedded page" — and,
   unlike a second code glyph, it cannot be confused with the `source` button beside it.
+- The npm-side version in `assets/package.json`, left at 0.5.0 through the 0.6.x, 0.7.0 and 0.7.1
+  tags, tracks the bundle version again.
+
+## [0.7.1] - 2026-08-15
 
 ### Fixed
 
@@ -259,7 +263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.0...v0.6.1
