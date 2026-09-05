@@ -40,7 +40,7 @@ enabled in your `assets/controllers.json`. Skip to step 3.
 Add the Lexical packages to your importmap:
 
 ```console
-php bin/console importmap:require lexical @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
+php bin/console importmap:require lexical @lexical/extension @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
 ```
 
 and enable the Stimulus controller in `assets/controllers.json`:

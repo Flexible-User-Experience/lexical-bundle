@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-09-05
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.49.0`
+  to `^0.50.0`. None of the [v0.50.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md)
+  breaking changes reaches the bundle; the toolbar, the three modals, the scheme allowlists and the
+  HTML round-trip were verified against it.
+- A paragraph ending in a line break (<kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed after
+  it) is now stored as `<br><br data-lexical-managed-linebreak="true">` instead of a lone `<br>`.
+  The marker is what makes that break survive a reload — through 0.49 it was saved and then dropped
+  on the next load — so rendered output gains one blank line in that case. Stable across repeated
+  saves, and content stored by earlier versions is unaffected.
+- `undo` / `redo` availability now comes from `HistoryExtension`'s `canUndo` / `canRedo` signals
+  instead of `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated by Lexical in 0.49. Reaching them
+  means building the editor with `buildEditorFromExtensions()` rather than `createEditor()`, so
+  `disconnect()` now disposes it. History is the only extension adopted — rich text, lists and
+  links stay plain `register*()` calls. No behaviour change.
+
+### Added
+
+- `@lexical/extension` in the bundle's importmap (`assets/package.json`), required by the
+  `HistoryExtension` migration above. With Flex it lands in `importmap.php` automatically on
+  install; without Flex it is part of the documented `importmap:require` command, which the README
+  and `docs/index.md` now include it in. It was already a transitive dependency of
+  `@lexical/history`, so nothing new is downloaded.
+
 ## [0.7.2] - 2026-08-15
 
 ### Changed
@@ -263,7 +290,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
+[1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
 [0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
