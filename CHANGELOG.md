@@ -5,6 +5,36 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - WIP
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.49.0`
+  to `^0.50.0`. None of the breaking changes in
+  [v0.50.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md) reaches the bundle:
+  `LexicalNode.replace()` no longer re-homes named slot values, and the controller's only
+  `replace()` — the embed-edit path — swaps a node that lives in the document, not a slot value;
+  the JSON clipboard payload now keys on `excludeFromCopy('clone')` instead of `'html'`, which no
+  node here implements; the new restriction on listeners returning cleanup functions is a
+  TypeScript-only diagnostic (the controller is plain JavaScript); and the `aria-live` region
+  0.50 mounts for heading announcements comes with `RichTextExtension`, not with the
+  `registerRichText` the controller registers — verified: nothing extra is added to the DOM.
+  Toolbar formats, alignment, lists, indentation, undo/redo, the link, source and embed modals,
+  the scheme allowlists and the HTML round-trip were all exercised against 0.50.0.
+- A paragraph that ends in a line break — a <kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed
+  after it — is now saved as `<br><br data-lexical-managed-linebreak="true">` instead of a lone
+  `<br>`. The marker is what makes that trailing break survive: through 0.49 it was written to the
+  field but dropped again the next time the content was loaded, since a trailing `<br>` inside a
+  block reads as a rendering artifact on import. Consumers rendering the stored HTML therefore get
+  one more blank line than before in that one case, and an attribute they did not have. The
+  exchange is stable in both directions: feeding 0.50's own output back in reproduces it byte for
+  byte — no `<br>` accumulates across saves — and content stored by earlier versions is untouched,
+  its lone trailing `<br>` still dropped on import exactly as it was.
+- `CAN_UNDO_COMMAND` and `CAN_REDO_COMMAND`, which the `undo` and `redo` buttons use to mirror the
+  history stacks, are deprecated in 0.50 in favour of `HistoryExtension` signals. Both still
+  dispatch and the buttons still enable and disable correctly; the migration is left for a release
+  that moves the controller to the extension API as a whole.
+
 ## [0.7.2] - 2026-08-15
 
 ### Changed
