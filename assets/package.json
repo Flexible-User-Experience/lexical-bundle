@@ -16,6 +16,7 @@
         "importmap": {
             "@hotwired/stimulus": "^3.0.0",
             "lexical": "^0.50.0",
+            "@lexical/extension": "^0.50.0",
             "@lexical/rich-text": "^0.50.0",
             "@lexical/html": "^0.50.0",
             "@lexical/clipboard": "^0.50.0",

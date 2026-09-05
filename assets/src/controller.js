@@ -2,7 +2,6 @@ import '../styles/lexical.css';
 
 import { Controller } from '@hotwired/stimulus';
 import {
-    createEditor,
     $getRoot,
     $getNodeByKey,
     $getNearestNodeFromDOMNode,
@@ -23,13 +22,18 @@ import {
     OUTDENT_CONTENT_COMMAND,
     UNDO_COMMAND,
     REDO_COMMAND,
-    CAN_UNDO_COMMAND,
-    CAN_REDO_COMMAND,
     CUT_COMMAND,
     COPY_COMMAND,
     SELECTION_CHANGE_COMMAND,
     COMMAND_PRIORITY_LOW,
 } from 'lexical';
+import {
+    buildEditorFromExtensions,
+    configExtension,
+    defineExtension,
+    effect,
+    getExtensionDependencyFromEditor,
+} from '@lexical/extension';
 import { registerRichText, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import { $insertDataTransferForRichText } from '@lexical/clipboard';
@@ -42,7 +46,7 @@ import {
     registerList,
 } from '@lexical/list';
 import { LinkNode, TOGGLE_LINK_COMMAND, $isLinkNode, $toggleLink } from '@lexical/link';
-import { registerHistory, createEmptyHistoryState } from '@lexical/history';
+import { HistoryExtension } from '@lexical/history';
 import {
     mergeRegister,
     $getNearestNodeOfType,
@@ -90,8 +94,8 @@ const INDENT_COMMANDS = {
     outdent: OUTDENT_CONTENT_COMMAND,
 };
 
-// One-shot history commands, handled by the registered history plugin. The buttons are
-// enabled/disabled from the CAN_UNDO/CAN_REDO payloads rather than an active state.
+// One-shot history commands, handled by HistoryExtension. The buttons are enabled and
+// disabled from its canUndo/canRedo signals rather than from an active state.
 const HISTORY_COMMANDS = {
     undo: UNDO_COMMAND,
     redo: REDO_COMMAND,
@@ -168,6 +172,9 @@ export default class extends Controller {
         }
         if (this.editor) {
             this.editor.setRootElement(null);
+            // buildEditorFromExtensions() hands back an editor that owns its extensions'
+            // registrations; dispose() is what releases them. It is idempotent.
+            this.editor.dispose();
             this.editor = null;
         }
     }
@@ -395,24 +402,35 @@ export default class extends Controller {
     // --- Editor ------------------------------------------------------------
 
     #createEditor() {
-        const editor = createEditor({
-            namespace: 'lexical',
-            editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
-            nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
-            theme: THEME,
-            onError: (error) => console.error('[lexical]', error),
-        });
+        // Built through the extension API rather than createEditor(): reaching an
+        // extension's output is what the builder is for, and the undo/redo availability
+        // now lives in HistoryExtension's signals. Only history is taken as an extension
+        // — rich text, lists and links stay the plain register*() calls below. Their
+        // extensions exist too, but each carries behaviour of its own (RichTextExtension
+        // mounts an aria-live region for heading announcements, for one), so adopting
+        // them is a separate decision from retiring a deprecated command.
+        const editor = buildEditorFromExtensions(
+            defineExtension({
+                name: '@flexible-ux/lexical-bundle',
+                namespace: 'lexical',
+                editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
+                nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
+                theme: THEME,
+                onError: (error) => console.error('[lexical]', error),
+                dependencies: [configExtension(HistoryExtension, { delay: 300 })],
+            }),
+        );
         this.editor = editor;
         editor.setRootElement(this.editableTarget);
 
-        // History availability, kept current by the CAN_UNDO/CAN_REDO handlers below.
+        // History availability, mirrored from the extension's signals by the effect below.
         this.canUndo = false;
         this.canRedo = false;
+        const history = getExtensionDependencyFromEditor(editor, HistoryExtension).output;
 
         this.teardown = mergeRegister(
             registerRichText(editor),
             registerList(editor),
-            registerHistory(editor, createEmptyHistoryState(), 300),
             // Vanilla Lexical needs the link toggle wired manually (no React plugin).
             editor.registerCommand(
                 TOGGLE_LINK_COMMAND,
@@ -477,28 +495,18 @@ export default class extends Controller {
                 },
                 COMMAND_PRIORITY_LOW,
             ),
-            // The undo/redo buttons mirror the history stacks, whose availability only
-            // ever arrives through these two payloads — refresh as soon as one does.
-            editor.registerCommand(
-                CAN_UNDO_COMMAND,
-                (canUndo) => {
-                    this.canUndo = canUndo;
-                    this.#refreshToolbar(editor.getEditorState());
-
-                    return false;
-                },
-                COMMAND_PRIORITY_LOW,
-            ),
-            editor.registerCommand(
-                CAN_REDO_COMMAND,
-                (canRedo) => {
-                    this.canRedo = canRedo;
-                    this.#refreshToolbar(editor.getEditorState());
-
-                    return false;
-                },
-                COMMAND_PRIORITY_LOW,
-            ),
+            // The undo/redo buttons mirror the history stacks. CAN_UNDO_COMMAND and
+            // CAN_REDO_COMMAND used to carry that, and Lexical deprecated both in 0.49
+            // for a reason this controller was exposed to: a command only reports a
+            // *change*, so a listener has no way to read the availability it never saw
+            // dispatched. A signal always holds the current value, so this effect runs
+            // once on registration with the truth and again on every change — and hands
+            // back the same kind of disposer the register*() calls do.
+            effect(() => {
+                this.canUndo = history.canUndo.value;
+                this.canRedo = history.canRedo.value;
+                this.#refreshToolbar(editor.getEditorState());
+            }),
             editor.registerUpdateListener(({ editorState }) => {
                 this.#syncOut(editorState);
                 this.#refreshToolbar(editorState);

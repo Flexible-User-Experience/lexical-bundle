@@ -30,10 +30,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exchange is stable in both directions: feeding 0.50's own output back in reproduces it byte for
   byte — no `<br>` accumulates across saves — and content stored by earlier versions is untouched,
   its lone trailing `<br>` still dropped on import exactly as it was.
-- `CAN_UNDO_COMMAND` and `CAN_REDO_COMMAND`, which the `undo` and `redo` buttons use to mirror the
-  history stacks, are deprecated in 0.50 in favour of `HistoryExtension` signals. Both still
-  dispatch and the buttons still enable and disable correctly; the migration is left for a release
-  that moves the controller to the extension API as a whole.
+- The `undo` and `redo` buttons no longer read `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated
+  by Lexical in 0.49: their availability now comes from `HistoryExtension`'s `canUndo` / `canRedo`
+  signals. The reason upstream gives is one this controller was exposed to — a command only reports
+  a *change*, so a listener has no way to read an availability it never saw dispatched, while a
+  signal always holds the current value. The editor is therefore built with
+  `buildEditorFromExtensions()` instead of `createEditor()`, which is what makes an extension's
+  output reachable, and a single `effect()` mirrors both signals onto the buttons in place of the
+  two command listeners. Nothing about the buttons changes for the user.
+  History is the only extension adopted: rich text, lists and links stay the plain `register*()`
+  calls they already were. Their extensions exist too, but each carries behaviour of its own —
+  `RichTextExtension`, for one, mounts an `aria-live` region for heading announcements — so taking
+  them is a separate decision from retiring a deprecated command, not a side effect of it. Verified
+  against 0.50.0: the buttons track the stacks correctly through every undo and redo step, the
+  editor disposes and rebuilds across a Stimulus disconnect/reconnect (the builder hands back an
+  editor that owns its extensions' registrations, so `disconnect()` now calls `dispose()`), and no
+  `aria-live` region reaches the DOM.
+
+### Added
+
+- `@lexical/extension` in the bundle's importmap (`assets/package.json`), required by the
+  `HistoryExtension` migration above. With Flex it lands in `importmap.php` automatically on
+  install; without Flex it is part of the documented `importmap:require` command, which the README
+  and `docs/index.md` now include it in. It was already a transitive dependency of
+  `@lexical/history`, so nothing new is downloaded.
 
 ## [0.7.2] - 2026-08-15
 
@@ -293,7 +313,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
+[1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
 [0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
