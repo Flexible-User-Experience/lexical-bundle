@@ -5,47 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - WIP
+## [1.0.0] - 2026-09-05
 
 ### Changed
 
 - The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.49.0`
-  to `^0.50.0`. None of the breaking changes in
-  [v0.50.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md) reaches the bundle:
-  `LexicalNode.replace()` no longer re-homes named slot values, and the controller's only
-  `replace()` — the embed-edit path — swaps a node that lives in the document, not a slot value;
-  the JSON clipboard payload now keys on `excludeFromCopy('clone')` instead of `'html'`, which no
-  node here implements; the new restriction on listeners returning cleanup functions is a
-  TypeScript-only diagnostic (the controller is plain JavaScript); and the `aria-live` region
-  0.50 mounts for heading announcements comes with `RichTextExtension`, not with the
-  `registerRichText` the controller registers — verified: nothing extra is added to the DOM.
-  Toolbar formats, alignment, lists, indentation, undo/redo, the link, source and embed modals,
-  the scheme allowlists and the HTML round-trip were all exercised against 0.50.0.
-- A paragraph that ends in a line break — a <kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed
-  after it — is now saved as `<br><br data-lexical-managed-linebreak="true">` instead of a lone
-  `<br>`. The marker is what makes that trailing break survive: through 0.49 it was written to the
-  field but dropped again the next time the content was loaded, since a trailing `<br>` inside a
-  block reads as a rendering artifact on import. Consumers rendering the stored HTML therefore get
-  one more blank line than before in that one case, and an attribute they did not have. The
-  exchange is stable in both directions: feeding 0.50's own output back in reproduces it byte for
-  byte — no `<br>` accumulates across saves — and content stored by earlier versions is untouched,
-  its lone trailing `<br>` still dropped on import exactly as it was.
-- The `undo` and `redo` buttons no longer read `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated
-  by Lexical in 0.49: their availability now comes from `HistoryExtension`'s `canUndo` / `canRedo`
-  signals. The reason upstream gives is one this controller was exposed to — a command only reports
-  a *change*, so a listener has no way to read an availability it never saw dispatched, while a
-  signal always holds the current value. The editor is therefore built with
-  `buildEditorFromExtensions()` instead of `createEditor()`, which is what makes an extension's
-  output reachable, and a single `effect()` mirrors both signals onto the buttons in place of the
-  two command listeners. Nothing about the buttons changes for the user.
-  History is the only extension adopted: rich text, lists and links stay the plain `register*()`
-  calls they already were. Their extensions exist too, but each carries behaviour of its own —
-  `RichTextExtension`, for one, mounts an `aria-live` region for heading announcements — so taking
-  them is a separate decision from retiring a deprecated command, not a side effect of it. Verified
-  against 0.50.0: the buttons track the stacks correctly through every undo and redo step, the
-  editor disposes and rebuilds across a Stimulus disconnect/reconnect (the builder hands back an
-  editor that owns its extensions' registrations, so `disconnect()` now calls `dispose()`), and no
-  `aria-live` region reaches the DOM.
+  to `^0.50.0`. None of the [v0.50.0](https://github.com/facebook/lexical/blob/main/CHANGELOG.md)
+  breaking changes reaches the bundle; the toolbar, the three modals, the scheme allowlists and the
+  HTML round-trip were verified against it.
+- A paragraph ending in a line break (<kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed after
+  it) is now stored as `<br><br data-lexical-managed-linebreak="true">` instead of a lone `<br>`.
+  The marker is what makes that break survive a reload — through 0.49 it was saved and then dropped
+  on the next load — so rendered output gains one blank line in that case. Stable across repeated
+  saves, and content stored by earlier versions is unaffected.
+- `undo` / `redo` availability now comes from `HistoryExtension`'s `canUndo` / `canRedo` signals
+  instead of `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated by Lexical in 0.49. Reaching them
+  means building the editor with `buildEditorFromExtensions()` rather than `createEditor()`, so
+  `disconnect()` now disposes it. History is the only extension adopted — rich text, lists and
+  links stay plain `register*()` calls. No behaviour change.
 
 ### Added
 
