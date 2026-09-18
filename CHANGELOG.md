@@ -43,14 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JSON output is unchanged. Verified against 0.51.0 through AssetMapper's `importmap:require` and
   StimulusBundle's loader: the editor mounts, the HTML round-trip, the toolbar (formats, alignment,
   lists, `undo` / `redo` from the history signals), the link and embed allowlists and the three
-  modals behave as before, and an embed survives both JSON paths ??? the clipboard one behind
+  modals behave as before, and an embed survives both JSON paths — the clipboard one behind
   `cut` / `copy` / `paste` of a selected embed, and `editorState.toJSON()` in its legacy and new
   compact (`toJSON(true)`) forms, which parse back to the same document.
 - `@lexical/extension` is now published as one entry per extension, so a consuming application's
   `importmap.php` gains 30 entries after the update: the 29 `@lexical/extension/*` modules the
   other packages import directly, plus `@preact/signals-core`, which reached the browser inside
   `@lexical/extension` until now and becomes an entry of its own. It is the same code split into
-  more files, and AssetMapper resolves it on its own ??? with Flex, `composer update` notices that
+  more files, and AssetMapper resolves it on its own — with Flex, `composer update` notices that
   the pinned 0.50.0 no longer satisfies `^0.51.0` and re-runs `importmap:require` for the nine
   packages; without Flex, run the documented `importmap:require` command again, which re-pins the
   nine packages and everything they pull in. That command (README and `docs/index.md`) now carries
@@ -68,13 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   HTML round-trip were verified against it.
 - A paragraph ending in a line break (<kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed after
   it) is now stored as `<br><br data-lexical-managed-linebreak="true">` instead of a lone `<br>`.
-  The marker is what makes that break survive a reload ??? through 0.49 it was saved and then dropped
-  on the next load ??? so rendered output gains one blank line in that case. Stable across repeated
+  The marker is what makes that break survive a reload — through 0.49 it was saved and then dropped
+  on the next load — so rendered output gains one blank line in that case. Stable across repeated
   saves, and content stored by earlier versions is unaffected.
 - `undo` / `redo` availability now comes from `HistoryExtension`'s `canUndo` / `canRedo` signals
   instead of `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated by Lexical in 0.49. Reaching them
   means building the editor with `buildEditorFromExtensions()` rather than `createEditor()`, so
-  `disconnect()` now disposes it. History is the only extension adopted ??? rich text, lists and
+  `disconnect()` now disposes it. History is the only extension adopted — rich text, lists and
   links stay plain `register*()` calls. No behaviour change.
 
 ### Added
@@ -91,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `iframe` button now uses the Lucide `app-window` icon instead of `globe` (which leaves the
   bundled icon set). CKEditor's globe was the obvious starting point, but in this toolbar it reads
-  as "the web" two buttons away from `link`, while a window frame says "an embedded page" ??? and,
+  as "the web" two buttons away from `link`, while a window frame says "an embedded page" — and,
   unlike a second code glyph, it cannot be confused with the `source` button beside it.
 - The npm-side version in `assets/package.json`, left at 0.5.0 through the 0.6.x, 0.7.0 and 0.7.1
   tags, tracks the bundle version again.
@@ -103,20 +103,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `lexical` controller failed to load in a consuming application with
   `Failed to fetch dynamically imported module: .../src/controller-<digest>.js`, leaving the
   plain textarea in place. AssetMapper discovers the imports it has to rewrite with a regex
-  whose named-import clause is `[\w\s{},*]` ??? no `$` ??? so the controller's
-  `import { IframeNode, $createIframeNode, ??? } from './iframe-node.js'` was invisible to it:
+  whose named-import clause is `[\w\s{},*]` — no `$` — so the controller's
+  `import { IframeNode, $createIframeNode, … } from './iframe-node.js'` was invisible to it:
   no importmap entry was generated for the relative module, and the browser requested the
   undigested `iframe-node.js`, which does not exist. The statement is now a namespace import
   the compiler matches, and an integration test asserts every relative import of the
-  controller is discovered. Consumers on 0.7.0 need no configuration change ??? only this
+  controller is discovered. Consumers on 0.7.0 need no configuration change — only this
   release. Bare imports were never affected: they resolve through the importmap by name.
 
 ## [0.7.0] - 2026-08-15
 
 ### Added
 
-- An `iframe` toolbar button ??? the equivalent of CKEditor's *IFrame* dialog (and of the
-  `extraAllowedContent: 'iframe[*]'` a FOSCKEditor config needed to keep the markup) ??? sitting
+- An `iframe` toolbar button — the equivalent of CKEditor's *IFrame* dialog (and of the
+  `extraAllowedContent: 'iframe[*]'` a FOSCKEditor config needed to keep the markup) — sitting
   right before `source` in the default toolbar, and optional like every other button.
   - The modal takes the frame URL, an optional width and height (a number of pixels or a
     percentage), an advisory `title` and an *allow fullscreen* checkbox; the embed is stored as a
@@ -124,7 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Embeds are a Lexical node of their own (`assets/src/iframe-node.js`), so they survive the
     round-trip through the editor: an `<iframe>` arriving from the `source` modal, a paste or
     already-stored content keeps `src`, `width`, `height`, `title`, `allow`, `sandbox` and
-    `allowfullscreen` ??? enough for a YouTube or Maps embed ??? while everything else it carried is
+    `allowfullscreen` — enough for a YouTube or Maps embed — while everything else it carried is
     normalised away like any other markup the model cannot represent.
   - Inside the editor an embed renders as a live but inert preview: clicking it selects the block
     (outlined, and `cut`/`copy` apply to it), <kbd>Backspace</kbd> or <kbd>Delete</kbd> removes it,
@@ -132,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     are ordinary undoable steps. The preview carries `loading="lazy"` and, unless the embed brought
     its own `sandbox`, a `sandbox="allow-scripts allow-same-origin"` that keeps the framed page from
     navigating the page hosting the form away; neither attribute is exported.
-  - A frame source must resolve to an `http(s)` URL ??? relative URLs included, `javascript:` and
+  - A frame source must resolve to an `http(s)` URL — relative URLs included, `javascript:` and
     `data:` excluded. The rule is fixed (deliberately not `allowed_link_schemes`, which may carry
     `mailto`/`tel`) and, like the link allowlist, enforced by a node transform wherever content
     enters the document, so a disallowed embed is dropped whichever way it arrived.
@@ -143,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BC break**: added the `LexicalBundle` namespace sublevel so several FlexibleUx bundles can
-  coexist without class collisions ??? the root namespace is now `FlexibleUx\LexicalBundle\` and
+  coexist without class collisions — the root namespace is now `FlexibleUx\LexicalBundle\` and
   the bundle class `FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle`. Update your
   `config/bundles.php` registration and any `FlexibleUx\Form\Type\LexicalFormType` import to
   `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType`. The `flexible_ux_lexical` config key,
@@ -162,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- The unused `symfony/phpunit-bridge` dev requirement ??? nothing registered the bridge, so it
+- The unused `symfony/phpunit-bridge` dev requirement — nothing registered the bridge, so it
   was inert under a plain `vendor/bin/phpunit` run.
 
 ## [0.6.0] - 2026-08-13
@@ -175,22 +175,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   text-format group.
   - `undo` / `redo` dispatch Lexical's history commands and stay disabled while their stack is
     empty (driven by the `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads).
-  - `cut` / `copy` dispatch `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard event ???
-    no Clipboard API permission involved ??? and are disabled while the selection is collapsed.
+  - `cut` / `copy` dispatch `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard event —
+    no Clipboard API permission involved — and are disabled while the selection is collapsed.
   - `paste` / `paste-word` read the system clipboard through the asynchronous Clipboard API
     (secure context; the browser may ask the user's permission). When access is denied, a
-    translated hint (`error.clipboard_denied`) points at Ctrl+V / ???V, which remains native Lexical
-    behaviour. Pasted markup is imported through Lexical's model ??? whatever the model cannot
-    represent is normalised away ??? and links whose scheme is not in `allowed_link_schemes` are
+    translated hint (`error.clipboard_denied`) points at Ctrl+V / ⌘V, which remains native Lexical
+    behaviour. Pasted markup is imported through Lexical's model — whatever the model cannot
+    represent is normalised away — and links whose scheme is not in `allowed_link_schemes` are
     unwrapped, exactly as in the `source` modal.
   - `paste-word` scrubs Word's clipboard HTML before the import: conditional comments and
-    Office-namespace elements (`<o:p>`, ???) are dropped, and consecutive `mso-list` paragraphs are
-    rebuilt as real bulleted/numbered lists (flat ??? nesting levels are not reconstructed) instead
-    of importing as paragraphs with a literal "??" / "1." marker in front.
+    Office-namespace elements (`<o:p>`, …) are dropped, and consecutive `mso-list` paragraphs are
+    rebuilt as real bulleted/numbered lists (flat — nesting levels are not reconstructed) instead
+    of importing as paragraphs with a literal "·" / "1." marker in front.
   - `remove-format` strips the inline text formats and styles from the selection; block structure
     (lists, alignment, indentation) and links are kept, mirroring CKEditor's RemoveFormat scope.
-- The matching Lucide icons ??? `undo`, `redo`, `scissors`, `copy`, `clipboard-paste`,
-  `clipboard-type` and `remove-formatting` ??? join the bundled offline icon set, and the labels are
+- The matching Lucide icons — `undo`, `redo`, `scissors`, `copy`, `clipboard-paste`,
+  `clipboard-type` and `remove-formatting` — join the bundled offline icon set, and the labels are
   translated in English, Spanish and Catalan.
 - `@lexical/clipboard` in the bundle's importmap (`assets/package.json`): with Flex it lands in
   `importmap.php` automatically on install; without Flex it is part of the documented
@@ -206,13 +206,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- A native keyboard paste (Ctrl+V / ???V) or a drag-and-drop could smuggle a link with a disallowed
-  scheme ??? e.g. `javascript:` ??? into the stored HTML: only the link modal, the `source` modal and
+- A native keyboard paste (Ctrl+V / ⌘V) or a drag-and-drop could smuggle a link with a disallowed
+  scheme — e.g. `javascript:` — into the stored HTML: only the link modal, the `source` modal and
   the toolbar paste buttons enforced the `allowed_link_schemes` allowlist. Enforcement now lives in
   a Lexical node transform on `LinkNode`, the one place every path converges, so any link entering
   the document by any means is unwrapped when its scheme is not allowed (its text stays, the link
   goes). This also covers the initial load: stored content that already carries a disallowed link
-  loses that link ??? silently, by design ??? the next time it is edited. The explicit unwrap pass the
+  loses that link — silently, by design — the next time it is edited. The explicit unwrap pass the
   `source` modal and the paste buttons used to run is gone, replaced by the transform.
 
 ## [0.5.0] - 2026-08-03
@@ -235,22 +235,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Four text-alignment toolbar buttons ??? `align-left`, `align-center`, `align-right` and
-  `align-justify` ??? available through the `toolbar` option and enabled by default as a new group
+- Four text-alignment toolbar buttons — `align-left`, `align-center`, `align-right` and
+  `align-justify` — available through the `toolbar` option and enabled by default as a new group
   between the text formats and the lists. They dispatch Lexical's `FORMAT_ELEMENT_COMMAND`, and the
   button matching the current block's alignment lights up radio-style (none while the block keeps
   the default alignment). Lexical stores the result as an inline `text-align` on the block, so the
   alignment survives into the saved HTML with no extra CSS.
   Like every toolbar entry the buttons are optional and individually pickable: a `toolbar` option
   (per field or via the bundle configuration) without `align-*` entries renders no alignment
-  buttons ??? existing `text-align` styles in stored content are still preserved when edited.
-- The matching Lucide icons ??? `align-left`, `align-center`, `align-right` and `align-justify` ???
+  buttons — existing `text-align` styles in stored content are still preserved when edited.
+- The matching Lucide icons — `align-left`, `align-center`, `align-right` and `align-justify` —
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.
 - A `source` toolbar button (Lucide `file-code-corner` icon, bundled in the offline icon set), in
   the default toolbar as its own trailing group: it opens a modal where the document is edited as
-  plain-text HTML. Confirming re-imports the markup through Lexical's model ??? markup the editor
-  cannot represent is normalised away ??? as a single undoable history step, and every imported link
+  plain-text HTML. Confirming re-imports the markup through Lexical's model — markup the editor
+  cannot represent is normalised away — as a single undoable history step, and every imported link
   is checked against the same `allowed_link_schemes` allowlist as the link modal (a disallowed
   scheme unwraps the link), so the source path cannot smuggle e.g. `javascript:` hrefs into the
   stored HTML. Labels are translated in English, Spanish and Catalan.
@@ -273,7 +273,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button-to-group map inside the form theme, which meant a custom `toolbar` had no say in them. The
   toolbar now renders entries in exactly the order given and draws a divider wherever a `|` entry
   appears. `DEFAULT_TOOLBAR` embeds the previous four groups, so the out-of-the-box appearance is
-  unchanged ??? but **a custom `toolbar` no longer gets automatic separators**: add `'|'` entries where
+  unchanged — but **a custom `toolbar` no longer gets automatic separators**: add `'|'` entries where
   you want them.
 - Redundant separators (leading, trailing or repeated) are dropped when the option is normalised, so
   a hand-written list cannot render a stray or doubled divider.
@@ -290,11 +290,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `subscript` and `superscript` (Lexical text formats, toggling like the other text buttons) and
   `indent` / `outdent` (Lexical's `INDENT_CONTENT_COMMAND` and `OUTDENT_CONTENT_COMMAND`, one-shot
   block actions that never render as "active").
-- The matching Lucide icons ??? `subscript`, `superscript`, `indent-increase` and `indent-decrease` ???
+- The matching Lucide icons — `subscript`, `superscript`, `indent-increase` and `indent-decrease` —
   are bundled with the existing offline icon set, and the labels are translated in English, Spanish
   and Catalan.
 - A new `indent` toolbar group, so the theme draws a separator between the list and indent buttons
-  (text ?? list ?? indent ?? link).
+  (text · list · indent · link).
 
 ### Changed
 
@@ -343,7 +343,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...v1.0.0
 [0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
