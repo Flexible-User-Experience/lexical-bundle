@@ -5,6 +5,39 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.50.0`
+  to `^0.51.0`. None of the three
+  [v0.51.0](https://github.com/facebook/lexical/releases/tag/v0.51.0) breaking changes reaches
+  the bundle:
+  - *npm packages are ESM only.* The importmap has always loaded jsDelivr's ESM build, and no
+    CommonJS is involved anywhere between AssetMapper and the browser, so nothing changes for a
+    consuming application.
+  - *`exportJSON` may serialize the instance as-is.* This only concerns nodes that declare their
+    properties with the new `withField` schema API. The bundle's `IframeNode` keeps its
+    hand-written `exportJSON()`, which reads through `getLatest()`, and Lexical's own nodes are
+    exported from the node map exactly as before.
+  - *`@lexical/code` drops its Prism re-exports.* The bundle does not use `@lexical/code`.
+  The new declarative serialization schema (`$config().json`) is not adopted: `IframeNode` stays on
+  `getType()` / `clone()` / `importJSON()` / `exportJSON()`, none of which 0.51 deprecates, and its
+  JSON output is unchanged. Verified against 0.51.0 through AssetMapper's `importmap:require` and
+  StimulusBundle's loader: the editor mounts, the HTML round-trip, the toolbar (formats, alignment,
+  lists, `undo` / `redo` from the history signals), the link and embed allowlists and the three
+  modals behave as before, and an embed survives both JSON paths — the clipboard one behind
+  `cut` / `copy` / `paste` of a selected embed, and `editorState.toJSON()` in its legacy and new
+  compact (`toJSON(true)`) forms, which parse back to the same document.
+- `@lexical/extension` is now published as one entry per extension, so a consuming application's
+  `importmap.php` grows from 14 to 44 entries after the update: the 30 `@lexical/extension/*`
+  modules the other packages import directly, plus `@preact/signals-core`, which reached the
+  browser inside `@lexical/extension` until now and becomes an entry of its own. It is the same
+  code split into more files, and AssetMapper resolves it on its own — with Flex, `composer update`
+  notices that the pinned 0.50.0 no longer satisfies `^0.51.0` and re-runs `importmap:require` for
+  the nine packages; without Flex, run the documented `importmap:require` command again. The
+  command itself is unchanged: the bundle's own imports are the same nine packages.
+
 ## [1.0.0] - 2026-09-05
 
 ### Changed
