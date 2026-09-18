@@ -192,6 +192,26 @@ final class BundleIntegrationTest extends KernelTestCase
         self::assertStringNotContainsString('data-command="align-justify"', $html);
     }
 
+    public function testThemeFallbacksResolveTheFormTypeConstants(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        // The fallbacks behind `|default(constant('…LexicalFormType::…'))` are what a custom
+        // form theme gets when it renders the block without the view vars buildView() sets.
+        // Twig evaluates a default filter's argument on every render, so a wrong FQCN already
+        // breaks every rendering test; what only this one checks is that the fallback branch
+        // hands back the same values the form type uses.
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, ['toolbar' => ['bold', '|', 'italic']])
+            ->createView();
+        unset($view->vars['lexical_height'], $view->vars['lexical_separator']);
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertStringContainsString(\sprintf('--lexical-min-height: %s;', LexicalFormType::DEFAULT_HEIGHT), $html);
+        self::assertSame(1, substr_count($html, 'lexical__sep'));
+    }
+
     public function testBundleConfigurationProvidesApplicationWideDefaults(): void
     {
         // Stands in for a config/packages/flexible_ux_lexical.yaml in the host application.
