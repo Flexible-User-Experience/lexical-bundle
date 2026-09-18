@@ -28,7 +28,7 @@ With Symfony Flex this also adds the Lexical packages to `importmap.php` and ena
 controller in `assets/controllers.json`. Without Flex, do both manually:
 
 ```console
-php bin/console importmap:require lexical @lexical/extension @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
+php bin/console importmap:require lexical@^0.51.0 @lexical/extension@^0.51.0 @lexical/rich-text@^0.51.0 @lexical/html@^0.51.0 @lexical/clipboard@^0.51.0 @lexical/list@^0.51.0 @lexical/link@^0.51.0 @lexical/history@^0.51.0 @lexical/utils@^0.51.0
 ```
 
 ```json

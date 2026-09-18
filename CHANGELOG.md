@@ -30,13 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cut` / `copy` / `paste` of a selected embed, and `editorState.toJSON()` in its legacy and new
   compact (`toJSON(true)`) forms, which parse back to the same document.
 - `@lexical/extension` is now published as one entry per extension, so a consuming application's
-  `importmap.php` grows from 14 to 44 entries after the update: the 30 `@lexical/extension/*`
-  modules the other packages import directly, plus `@preact/signals-core`, which reached the
-  browser inside `@lexical/extension` until now and becomes an entry of its own. It is the same
-  code split into more files, and AssetMapper resolves it on its own — with Flex, `composer update`
-  notices that the pinned 0.50.0 no longer satisfies `^0.51.0` and re-runs `importmap:require` for
-  the nine packages; without Flex, run the documented `importmap:require` command again. The
-  command itself is unchanged: the bundle's own imports are the same nine packages.
+  `importmap.php` gains 30 entries after the update: the 29 `@lexical/extension/*` modules the
+  other packages import directly, plus `@preact/signals-core`, which reached the browser inside
+  `@lexical/extension` until now and becomes an entry of its own. It is the same code split into
+  more files, and AssetMapper resolves it on its own — with Flex, `composer update` notices that
+  the pinned 0.50.0 no longer satisfies `^0.51.0` and re-runs `importmap:require` for the nine
+  packages; without Flex, run the documented `importmap:require` command again, which re-pins the
+  nine packages and everything they pull in. That command (README and `docs/index.md`) now carries
+  the `^0.51.0` constraint the bundle declares, so a non-Flex install gets the version the bundle
+  was verified against, as Flex does from `assets/package.json`; the bundle's own imports are the
+  same nine packages.
 
 ## [1.0.0] - 2026-09-05
 

@@ -37,13 +37,22 @@ enabled in your `assets/controllers.json`. Skip to step 3.
 
 #### Step 2 (without Flex): wire the front-end manually
 
-Add the Lexical packages to your importmap:
+Add the Lexical packages to your importmap at the constraint the bundle declares in its
+`assets/package.json` — every `lexical` / `@lexical/*` package has to be the same version, so require
+them together:
 
 ```console
-php bin/console importmap:require lexical @lexical/extension @lexical/rich-text @lexical/html @lexical/clipboard @lexical/list @lexical/link @lexical/history @lexical/utils
+php bin/console importmap:require lexical@^0.51.0 @lexical/extension@^0.51.0 @lexical/rich-text@^0.51.0 @lexical/html@^0.51.0 @lexical/clipboard@^0.51.0 @lexical/list@^0.51.0 @lexical/link@^0.51.0 @lexical/history@^0.51.0 @lexical/utils@^0.51.0
 ```
 
-and enable the Stimulus controller in `assets/controllers.json`:
+Those are the nine packages the controller imports. AssetMapper follows their own imports and adds
+what they pull in — the `@lexical/extension/*` modules, `@lexical/selection`, `@lexical/a11y`,
+`@lexical/dragon` and `@preact/signals-core` — so `importmap.php` ends up with 42 entries for the
+nine you named. Re-running the same command (with the constraint of the bundle version you are on)
+is also how you follow a later Lexical bump of the bundle without Flex: it re-pins the nine packages
+and refreshes everything they pull in.
+
+Then enable the Stimulus controller in `assets/controllers.json`:
 
 ```json
 {
