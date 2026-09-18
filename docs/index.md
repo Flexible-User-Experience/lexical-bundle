@@ -249,10 +249,9 @@ your own stylesheet — the bundle's CSS is plain, unscoped and low-specificity 
 
 All labels live in the `FlexibleUxLexical` translation domain (English, Spanish, Catalan, German,
 French, Italian and Portuguese ship with the bundle). Add or override a locale by placing
-`translations/FlexibleUxLexical.<locale>.xlf` in your
-application. Keys: `toolbar.*`, `dialog.link.*`, `dialog.source.*`, `dialog.iframe.*`, `dialog.cancel`,
-`dialog.confirm`, `error.invalid_url`, `error.invalid_embed_url`, `error.invalid_embed_size`,
-`error.clipboard_denied`.
+`translations/FlexibleUxLexical.<locale>.xlf` in your application. Keys: `toolbar.*`,
+`dialog.link.*`, `dialog.source.*`, `dialog.iframe.*`, `dialog.cancel`, `dialog.confirm`,
+`error.invalid_url`, `error.invalid_embed_url`, `error.invalid_embed_size`, `error.clipboard_denied`.
 
 ## Security notes
 
