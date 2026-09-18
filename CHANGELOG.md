@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-09-18
+
+### Added
+
+- German, French, Italian and Portuguese translations of every label in the `FlexibleUxLexical`
+  domain (`translations/FlexibleUxLexical.{de,fr,it,pt}.xlf`), alongside the English, Spanish and
+  Catalan catalogues shipped so far. The `pt` catalogue follows European Portuguese conventions.
+
+### Changed
+
+- The `lexical_widget` form theme reads its fallbacks for the editable height and the toolbar
+  separator through Twig's `constant()` (`LexicalFormType::DEFAULT_HEIGHT` and `::SEPARATOR`)
+  instead of repeating the literal values, so the form type stays the single source of both.
+  Rendered markup is unchanged; an integration test covers the fallback branch.
+- The npm-side version in `assets/package.json`, left at 0.7.2 through the 1.0.0 and 1.0.1 tags,
+  tracks the bundle version again.
+
 ## [1.0.1] - 2026-09-18
 
 ### Changed
@@ -326,7 +343,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...v1.0.0
 [0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1

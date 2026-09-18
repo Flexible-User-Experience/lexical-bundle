@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" target-language="de" datatype="plaintext" original="FlexibleUxLexical">
+        <body>
+            <trans-unit id="toolbar.label">
+                <source>toolbar.label</source>
+                <target>Textformatierung</target>
+            </trans-unit>
+            <trans-unit id="toolbar.undo">
+                <source>toolbar.undo</source>
+                <target>Rückgängig</target>
+            </trans-unit>
+            <trans-unit id="toolbar.redo">
+                <source>toolbar.redo</source>
+                <target>Wiederholen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.cut">
+                <source>toolbar.cut</source>
+                <target>Ausschneiden</target>
+            </trans-unit>
+            <trans-unit id="toolbar.copy">
+                <source>toolbar.copy</source>
+                <target>Kopieren</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste">
+                <source>toolbar.paste</source>
+                <target>Einfügen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste_word">
+                <source>toolbar.paste_word</source>
+                <target>Aus Word einfügen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bold">
+                <source>toolbar.bold</source>
+                <target>Fett</target>
+            </trans-unit>
+            <trans-unit id="toolbar.italic">
+                <source>toolbar.italic</source>
+                <target>Kursiv</target>
+            </trans-unit>
+            <trans-unit id="toolbar.underline">
+                <source>toolbar.underline</source>
+                <target>Unterstrichen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.strikethrough">
+                <source>toolbar.strikethrough</source>
+                <target>Durchgestrichen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.subscript">
+                <source>toolbar.subscript</source>
+                <target>Tiefgestellt</target>
+            </trans-unit>
+            <trans-unit id="toolbar.superscript">
+                <source>toolbar.superscript</source>
+                <target>Hochgestellt</target>
+            </trans-unit>
+            <trans-unit id="toolbar.remove_format">
+                <source>toolbar.remove_format</source>
+                <target>Formatierung entfernen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_left">
+                <source>toolbar.align_left</source>
+                <target>Linksbündig</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_center">
+                <source>toolbar.align_center</source>
+                <target>Zentriert</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_right">
+                <source>toolbar.align_right</source>
+                <target>Rechtsbündig</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_justify">
+                <source>toolbar.align_justify</source>
+                <target>Blocksatz</target>
+            </trans-unit>
+            <trans-unit id="toolbar.indent">
+                <source>toolbar.indent</source>
+                <target>Einzug vergrößern</target>
+            </trans-unit>
+            <trans-unit id="toolbar.outdent">
+                <source>toolbar.outdent</source>
+                <target>Einzug verkleinern</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bullet_list">
+                <source>toolbar.bullet_list</source>
+                <target>Aufzählung</target>
+            </trans-unit>
+            <trans-unit id="toolbar.numbered_list">
+                <source>toolbar.numbered_list</source>
+                <target>Nummerierte Liste</target>
+            </trans-unit>
+            <trans-unit id="toolbar.link">
+                <source>toolbar.link</source>
+                <target>Link einfügen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.unlink">
+                <source>toolbar.unlink</source>
+                <target>Link entfernen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.iframe">
+                <source>toolbar.iframe</source>
+                <target>IFrame einfügen</target>
+            </trans-unit>
+            <trans-unit id="toolbar.source">
+                <source>toolbar.source</source>
+                <target>Quelltext bearbeiten</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.title">
+                <source>dialog.link.title</source>
+                <target>Link einfügen</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.url_label">
+                <source>dialog.link.url_label</source>
+                <target>Link-URL</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.new_tab">
+                <source>dialog.link.new_tab</source>
+                <target>In neuem Tab öffnen</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.title">
+                <source>dialog.source.title</source>
+                <target>Quelltext bearbeiten</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.label">
+                <source>dialog.source.label</source>
+                <target>HTML-Quelltext</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.title">
+                <source>dialog.iframe.title</source>
+                <target>IFrame einfügen</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.url_label">
+                <source>dialog.iframe.url_label</source>
+                <target>Frame-URL</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.width_label">
+                <source>dialog.iframe.width_label</source>
+                <target>Breite</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.height_label">
+                <source>dialog.iframe.height_label</source>
+                <target>Höhe</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.advisory_title_label">
+                <source>dialog.iframe.advisory_title_label</source>
+                <target>Beschreibender Titel</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.allow_fullscreen">
+                <source>dialog.iframe.allow_fullscreen</source>
+                <target>Vollbild erlauben</target>
+            </trans-unit>
+            <trans-unit id="dialog.cancel">
+                <source>dialog.cancel</source>
+                <target>Abbrechen</target>
+            </trans-unit>
+            <trans-unit id="dialog.confirm">
+                <source>dialog.confirm</source>
+                <target>OK</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_url">
+                <source>error.invalid_url</source>
+                <target>Bitte eine gültige URL eingeben (http, https, mailto oder tel).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_url">
+                <source>error.invalid_embed_url</source>
+                <target>Bitte eine gültige Frame-URL eingeben (http oder https).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_size">
+                <source>error.invalid_embed_size</source>
+                <target>Breite und Höhe müssen eine Pixelzahl oder ein Prozentwert sein (z. B. 560 oder 100%).</target>
+            </trans-unit>
+            <trans-unit id="error.clipboard_denied">
+                <source>error.clipboard_denied</source>
+                <target>Der Browser hat den Zugriff auf die Zwischenablage blockiert. Bitte stattdessen mit Strg+V (⌘V auf dem Mac) einfügen.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

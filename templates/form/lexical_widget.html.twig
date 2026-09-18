@@ -39,7 +39,7 @@
         iframe: { icon: 'app-window', label: 'toolbar.iframe' },
         source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
-    {%- set lexical_sep = lexical_separator|default('|') -%}
+    {%- set lexical_sep = lexical_separator|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::SEPARATOR')) -%}
     <div class="lexical"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
@@ -48,7 +48,7 @@
              clipboardDeniedMessage: 'error.clipboard_denied'|trans({}, 'FlexibleUxLexical'),
              allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
          }) }}
-         style="--lexical-min-height: {{ lexical_height|default('200px') }};">
+         style="--lexical-min-height: {{ lexical_height|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_HEIGHT')) }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
             {%- for name in lexical_toolbar|default([]) -%}
                 {%- if name == lexical_sep -%}

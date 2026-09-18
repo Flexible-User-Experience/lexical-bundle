@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+    <file source-language="en" target-language="pt" datatype="plaintext" original="FlexibleUxLexical">
+        <body>
+            <trans-unit id="toolbar.label">
+                <source>toolbar.label</source>
+                <target>Formatação de texto</target>
+            </trans-unit>
+            <trans-unit id="toolbar.undo">
+                <source>toolbar.undo</source>
+                <target>Desfazer</target>
+            </trans-unit>
+            <trans-unit id="toolbar.redo">
+                <source>toolbar.redo</source>
+                <target>Refazer</target>
+            </trans-unit>
+            <trans-unit id="toolbar.cut">
+                <source>toolbar.cut</source>
+                <target>Cortar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.copy">
+                <source>toolbar.copy</source>
+                <target>Copiar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste">
+                <source>toolbar.paste</source>
+                <target>Colar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.paste_word">
+                <source>toolbar.paste_word</source>
+                <target>Colar do Word</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bold">
+                <source>toolbar.bold</source>
+                <target>Negrito</target>
+            </trans-unit>
+            <trans-unit id="toolbar.italic">
+                <source>toolbar.italic</source>
+                <target>Itálico</target>
+            </trans-unit>
+            <trans-unit id="toolbar.underline">
+                <source>toolbar.underline</source>
+                <target>Sublinhado</target>
+            </trans-unit>
+            <trans-unit id="toolbar.strikethrough">
+                <source>toolbar.strikethrough</source>
+                <target>Rasurado</target>
+            </trans-unit>
+            <trans-unit id="toolbar.subscript">
+                <source>toolbar.subscript</source>
+                <target>Subscrito</target>
+            </trans-unit>
+            <trans-unit id="toolbar.superscript">
+                <source>toolbar.superscript</source>
+                <target>Sobrescrito</target>
+            </trans-unit>
+            <trans-unit id="toolbar.remove_format">
+                <source>toolbar.remove_format</source>
+                <target>Remover formatação</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_left">
+                <source>toolbar.align_left</source>
+                <target>Alinhar à esquerda</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_center">
+                <source>toolbar.align_center</source>
+                <target>Centrar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_right">
+                <source>toolbar.align_right</source>
+                <target>Alinhar à direita</target>
+            </trans-unit>
+            <trans-unit id="toolbar.align_justify">
+                <source>toolbar.align_justify</source>
+                <target>Justificar</target>
+            </trans-unit>
+            <trans-unit id="toolbar.indent">
+                <source>toolbar.indent</source>
+                <target>Aumentar avanço</target>
+            </trans-unit>
+            <trans-unit id="toolbar.outdent">
+                <source>toolbar.outdent</source>
+                <target>Diminuir avanço</target>
+            </trans-unit>
+            <trans-unit id="toolbar.bullet_list">
+                <source>toolbar.bullet_list</source>
+                <target>Lista com marcas</target>
+            </trans-unit>
+            <trans-unit id="toolbar.numbered_list">
+                <source>toolbar.numbered_list</source>
+                <target>Lista numerada</target>
+            </trans-unit>
+            <trans-unit id="toolbar.link">
+                <source>toolbar.link</source>
+                <target>Inserir ligação</target>
+            </trans-unit>
+            <trans-unit id="toolbar.unlink">
+                <source>toolbar.unlink</source>
+                <target>Remover ligação</target>
+            </trans-unit>
+            <trans-unit id="toolbar.iframe">
+                <source>toolbar.iframe</source>
+                <target>Inserir IFrame</target>
+            </trans-unit>
+            <trans-unit id="toolbar.source">
+                <source>toolbar.source</source>
+                <target>Editar código-fonte</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.title">
+                <source>dialog.link.title</source>
+                <target>Inserir ligação</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.url_label">
+                <source>dialog.link.url_label</source>
+                <target>URL da ligação</target>
+            </trans-unit>
+            <trans-unit id="dialog.link.new_tab">
+                <source>dialog.link.new_tab</source>
+                <target>Abrir num novo separador</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.title">
+                <source>dialog.source.title</source>
+                <target>Editar código-fonte</target>
+            </trans-unit>
+            <trans-unit id="dialog.source.label">
+                <source>dialog.source.label</source>
+                <target>Código HTML</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.title">
+                <source>dialog.iframe.title</source>
+                <target>Inserir IFrame</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.url_label">
+                <source>dialog.iframe.url_label</source>
+                <target>URL do IFrame</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.width_label">
+                <source>dialog.iframe.width_label</source>
+                <target>Largura</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.height_label">
+                <source>dialog.iframe.height_label</source>
+                <target>Altura</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.advisory_title_label">
+                <source>dialog.iframe.advisory_title_label</source>
+                <target>Título descritivo</target>
+            </trans-unit>
+            <trans-unit id="dialog.iframe.allow_fullscreen">
+                <source>dialog.iframe.allow_fullscreen</source>
+                <target>Permitir ecrã inteiro</target>
+            </trans-unit>
+            <trans-unit id="dialog.cancel">
+                <source>dialog.cancel</source>
+                <target>Cancelar</target>
+            </trans-unit>
+            <trans-unit id="dialog.confirm">
+                <source>dialog.confirm</source>
+                <target>OK</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_url">
+                <source>error.invalid_url</source>
+                <target>Introduza um URL válido (http, https, mailto ou tel).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_url">
+                <source>error.invalid_embed_url</source>
+                <target>Introduza um URL válido para o IFrame (http ou https).</target>
+            </trans-unit>
+            <trans-unit id="error.invalid_embed_size">
+                <source>error.invalid_embed_size</source>
+                <target>A largura e a altura devem ser um número de píxeis ou uma percentagem (por exemplo, 560 ou 100%).</target>
+            </trans-unit>
+            <trans-unit id="error.clipboard_denied">
+                <source>error.clipboard_denied</source>
+                <target>O navegador bloqueou o acesso à área de transferência: cole com Ctrl+V (⌘V no Mac).</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
