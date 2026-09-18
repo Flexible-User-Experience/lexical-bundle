@@ -5,6 +5,42 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-18
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.50.0`
+  to `^0.51.0`. None of the three
+  [v0.51.0](https://github.com/facebook/lexical/releases/tag/v0.51.0) breaking changes reaches
+  the bundle:
+  - *npm packages are ESM only.* The importmap has always loaded jsDelivr's ESM build, and no
+    CommonJS is involved anywhere between AssetMapper and the browser, so nothing changes for a
+    consuming application.
+  - *`exportJSON` may serialize the instance as-is.* This only concerns nodes that declare their
+    properties with the new `withField` schema API. The bundle's `IframeNode` keeps its
+    hand-written `exportJSON()`, which reads through `getLatest()`, and Lexical's own nodes are
+    exported from the node map exactly as before.
+  - *`@lexical/code` drops its Prism re-exports.* The bundle does not use `@lexical/code`.
+  The new declarative serialization schema (`$config().json`) is not adopted: `IframeNode` stays on
+  `getType()` / `clone()` / `importJSON()` / `exportJSON()`, none of which 0.51 deprecates, and its
+  JSON output is unchanged. Verified against 0.51.0 through AssetMapper's `importmap:require` and
+  StimulusBundle's loader: the editor mounts, the HTML round-trip, the toolbar (formats, alignment,
+  lists, `undo` / `redo` from the history signals), the link and embed allowlists and the three
+  modals behave as before, and an embed survives both JSON paths ??? the clipboard one behind
+  `cut` / `copy` / `paste` of a selected embed, and `editorState.toJSON()` in its legacy and new
+  compact (`toJSON(true)`) forms, which parse back to the same document.
+- `@lexical/extension` is now published as one entry per extension, so a consuming application's
+  `importmap.php` gains 30 entries after the update: the 29 `@lexical/extension/*` modules the
+  other packages import directly, plus `@preact/signals-core`, which reached the browser inside
+  `@lexical/extension` until now and becomes an entry of its own. It is the same code split into
+  more files, and AssetMapper resolves it on its own ??? with Flex, `composer update` notices that
+  the pinned 0.50.0 no longer satisfies `^0.51.0` and re-runs `importmap:require` for the nine
+  packages; without Flex, run the documented `importmap:require` command again, which re-pins the
+  nine packages and everything they pull in. That command (README and `docs/index.md`) now carries
+  the `^0.51.0` constraint the bundle declares, so a non-Flex install gets the version the bundle
+  was verified against, as Flex does from `assets/package.json`; the bundle's own imports are the
+  same nine packages.
+
 ## [1.0.0] - 2026-09-05
 
 ### Changed
@@ -15,13 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   HTML round-trip were verified against it.
 - A paragraph ending in a line break (<kbd>Shift</kbd>+<kbd>Enter</kbd> with nothing typed after
   it) is now stored as `<br><br data-lexical-managed-linebreak="true">` instead of a lone `<br>`.
-  The marker is what makes that break survive a reload — through 0.49 it was saved and then dropped
-  on the next load — so rendered output gains one blank line in that case. Stable across repeated
+  The marker is what makes that break survive a reload ??? through 0.49 it was saved and then dropped
+  on the next load ??? so rendered output gains one blank line in that case. Stable across repeated
   saves, and content stored by earlier versions is unaffected.
 - `undo` / `redo` availability now comes from `HistoryExtension`'s `canUndo` / `canRedo` signals
   instead of `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND`, deprecated by Lexical in 0.49. Reaching them
   means building the editor with `buildEditorFromExtensions()` rather than `createEditor()`, so
-  `disconnect()` now disposes it. History is the only extension adopted — rich text, lists and
+  `disconnect()` now disposes it. History is the only extension adopted ??? rich text, lists and
   links stay plain `register*()` calls. No behaviour change.
 
 ### Added
@@ -38,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The `iframe` button now uses the Lucide `app-window` icon instead of `globe` (which leaves the
   bundled icon set). CKEditor's globe was the obvious starting point, but in this toolbar it reads
-  as "the web" two buttons away from `link`, while a window frame says "an embedded page" — and,
+  as "the web" two buttons away from `link`, while a window frame says "an embedded page" ??? and,
   unlike a second code glyph, it cannot be confused with the `source` button beside it.
 - The npm-side version in `assets/package.json`, left at 0.5.0 through the 0.6.x, 0.7.0 and 0.7.1
   tags, tracks the bundle version again.
@@ -50,20 +86,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `lexical` controller failed to load in a consuming application with
   `Failed to fetch dynamically imported module: .../src/controller-<digest>.js`, leaving the
   plain textarea in place. AssetMapper discovers the imports it has to rewrite with a regex
-  whose named-import clause is `[\w\s{},*]` — no `$` — so the controller's
-  `import { IframeNode, $createIframeNode, … } from './iframe-node.js'` was invisible to it:
+  whose named-import clause is `[\w\s{},*]` ??? no `$` ??? so the controller's
+  `import { IframeNode, $createIframeNode, ??? } from './iframe-node.js'` was invisible to it:
   no importmap entry was generated for the relative module, and the browser requested the
   undigested `iframe-node.js`, which does not exist. The statement is now a namespace import
   the compiler matches, and an integration test asserts every relative import of the
-  controller is discovered. Consumers on 0.7.0 need no configuration change — only this
+  controller is discovered. Consumers on 0.7.0 need no configuration change ??? only this
   release. Bare imports were never affected: they resolve through the importmap by name.
 
 ## [0.7.0] - 2026-08-15
 
 ### Added
 
-- An `iframe` toolbar button — the equivalent of CKEditor's *IFrame* dialog (and of the
-  `extraAllowedContent: 'iframe[*]'` a FOSCKEditor config needed to keep the markup) — sitting
+- An `iframe` toolbar button ??? the equivalent of CKEditor's *IFrame* dialog (and of the
+  `extraAllowedContent: 'iframe[*]'` a FOSCKEditor config needed to keep the markup) ??? sitting
   right before `source` in the default toolbar, and optional like every other button.
   - The modal takes the frame URL, an optional width and height (a number of pixels or a
     percentage), an advisory `title` and an *allow fullscreen* checkbox; the embed is stored as a
@@ -71,7 +107,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Embeds are a Lexical node of their own (`assets/src/iframe-node.js`), so they survive the
     round-trip through the editor: an `<iframe>` arriving from the `source` modal, a paste or
     already-stored content keeps `src`, `width`, `height`, `title`, `allow`, `sandbox` and
-    `allowfullscreen` — enough for a YouTube or Maps embed — while everything else it carried is
+    `allowfullscreen` ??? enough for a YouTube or Maps embed ??? while everything else it carried is
     normalised away like any other markup the model cannot represent.
   - Inside the editor an embed renders as a live but inert preview: clicking it selects the block
     (outlined, and `cut`/`copy` apply to it), <kbd>Backspace</kbd> or <kbd>Delete</kbd> removes it,
@@ -79,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     are ordinary undoable steps. The preview carries `loading="lazy"` and, unless the embed brought
     its own `sandbox`, a `sandbox="allow-scripts allow-same-origin"` that keeps the framed page from
     navigating the page hosting the form away; neither attribute is exported.
-  - A frame source must resolve to an `http(s)` URL — relative URLs included, `javascript:` and
+  - A frame source must resolve to an `http(s)` URL ??? relative URLs included, `javascript:` and
     `data:` excluded. The rule is fixed (deliberately not `allowed_link_schemes`, which may carry
     `mailto`/`tel`) and, like the link allowlist, enforced by a node transform wherever content
     enters the document, so a disallowed embed is dropped whichever way it arrived.
@@ -90,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **BC break**: added the `LexicalBundle` namespace sublevel so several FlexibleUx bundles can
-  coexist without class collisions — the root namespace is now `FlexibleUx\LexicalBundle\` and
+  coexist without class collisions ??? the root namespace is now `FlexibleUx\LexicalBundle\` and
   the bundle class `FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle`. Update your
   `config/bundles.php` registration and any `FlexibleUx\Form\Type\LexicalFormType` import to
   `FlexibleUx\LexicalBundle\Form\Type\LexicalFormType`. The `flexible_ux_lexical` config key,
@@ -109,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- The unused `symfony/phpunit-bridge` dev requirement — nothing registered the bridge, so it
+- The unused `symfony/phpunit-bridge` dev requirement ??? nothing registered the bridge, so it
   was inert under a plain `vendor/bin/phpunit` run.
 
 ## [0.6.0] - 2026-08-13
@@ -290,7 +326,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...v1.0.0
 [0.7.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.6.1...v0.7.0
