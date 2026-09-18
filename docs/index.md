@@ -119,9 +119,12 @@ The values are bound to the `flexible_ux_lexical.toolbar`, `.height` and `.allow
 container parameters and injected into the form type, so `config:dump-reference flexible_ux_lexical`
 documents them and an unknown key fails at container compile time.
 
-`undo` and `redo` dispatch Lexical's history commands and stay disabled while their stack is
-empty (driven by Lexical's `CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads), exactly like the
-keyboard shortcuts they mirror.
+`undo` and `redo` dispatch Lexical's `UNDO_COMMAND` / `REDO_COMMAND` and stay disabled while their
+stack is empty, exactly like the keyboard shortcuts they mirror. Their availability mirrors the
+`canUndo` / `canRedo` signals of `@lexical/extension`'s `HistoryExtension` (the editor is built
+with `buildEditorFromExtensions()` to reach them): a signal always holds the current value, so the
+buttons are right from the first render on and follow every change, where the
+`CAN_UNDO_COMMAND` / `CAN_REDO_COMMAND` payloads Lexical deprecated in 0.49 only reported a change.
 
 `cut` and `copy` dispatch Lexical's `CUT_COMMAND` / `COPY_COMMAND` with a synthesised clipboard
 event, so they involve no Clipboard API permission and work wherever the keyboard shortcuts do;
