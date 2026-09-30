@@ -24,7 +24,6 @@ import {
     REDO_COMMAND,
     CUT_COMMAND,
     COPY_COMMAND,
-    SELECTION_CHANGE_COMMAND,
     COMMAND_PRIORITY_LOW,
 } from 'lexical';
 import {
@@ -507,19 +506,16 @@ export default class extends Controller {
                 this.canRedo = history.canRedo.value;
                 this.#refreshToolbar(editor.getEditorState());
             }),
+            // The one place the toolbar follows the editor. Every commit passes through
+            // here, selection-only ones included, so there is no SELECTION_CHANGE_COMMAND
+            // handler beside it: since Lexical 0.52 that command runs inside the pending
+            // update, before the DOM is reconciled, where a refresh would read the
+            // committed (previous) state and look for wrappers that do not exist yet. The
+            // update listener sees the committed state and the reconciled DOM.
             editor.registerUpdateListener(({ editorState }) => {
                 this.#syncOut(editorState);
                 this.#refreshToolbar(editorState);
             }),
-            editor.registerCommand(
-                SELECTION_CHANGE_COMMAND,
-                () => {
-                    this.#refreshToolbar(editor.getEditorState());
-
-                    return false;
-                },
-                COMMAND_PRIORITY_LOW,
-            ),
         );
 
         this.#loadInitialHtml();
