@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-09-30
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.51.0`
+  to `^0.52.0`, and the documented `importmap:require` command (README and `docs/index.md`) now
+  carries `^0.52.0`. Of the three
+  [v0.52.0](https://github.com/facebook/lexical/releases/tag/v0.52.0) breaking changes, one
+  touched the controller and the other two do not reach the bundle:
+  - *`SELECTION_CHANGE_COMMAND` now runs before DOM reconciliation, inside the pending update.*
+    The controller refreshed the toolbar from a handler of that command as well as from its
+    update listener. Under the new timing the handler would read the committed (previous) state
+    and look for embed wrappers the DOM does not hold yet, and it was redundant anyway: every
+    selection change commits an update, so the update listener already refreshes the toolbar
+    after each one. The handler is gone; the toolbar is driven by the update listener alone.
+    Verified with real clicks and arrow keys on bold text, a list item, a link and an embed: each
+    produces exactly one commit and the matching button state. No behaviour change.
+  - *Default HTML export honours `DOMRenderExtension` `$createDOM` overrides.* The bundle registers
+    no such extension and `IframeNode.exportDOM()` builds its own element, so the exported HTML is
+    byte-for-byte what 0.51 produced.
+  - *`LexicalNode.getCommonAncestor` is removed.* The bundle never called it.
+  The rest of the release (mobile input fixes, caret scrolling, drag-and-drop, the `@lexical/mdast`
+  and `@lexical/headless` work) does not affect the bundle. The importmap keeps its 44 entries, all
+  at 0.52.0, and `@preact/signals-core` stays at 1.14.4, which already satisfies the `^1.14.4`
+  `@lexical/extension` now requires. Verified against 0.52.0 through AssetMapper's
+  `importmap:require` and StimulusBundle's loader like the 1.0.1 bump: the editor mounts, the HTML
+  round-trip, the toolbar, `undo` / `redo`, the link and embed allowlists, the three modals and an
+  embed's JSON paths (clipboard, legacy and compact `toJSON()`) behave as before.
+- The npm-side version in `assets/package.json`, left at 1.0.1 through the 1.0.2 tag, tracks the
+  bundle version again.
+
 ## [1.0.2] - 2026-09-18
 
 ### Added
@@ -343,7 +374,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v0.7.2...v1.0.0
