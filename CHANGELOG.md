@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-10-05
+
+### Fixed
+
+- A form that was only opened no longer counts as modified. On load the controller wrote the
+  editor's HTML back into the textarea, which is seldom the string the field was rendered with —
+  the editor puts a class on every paragraph, wraps every run of text in a span and decodes
+  entities — so a guard that compares the form with its initial state (Sonata Admin's
+  `confirm_exit`, for one) asked to confirm leaving a form nobody had touched, and saving it
+  rewrote the stored markup. The textarea now keeps the string it was rendered with until the
+  document changes, and gets it back when an edit is undone to the loaded document. The exception
+  is content that loses a link or an embed to the allowlists while loading: that still reaches the
+  textarea at once, so "opening and saving strips it" holds as documented.
+
+### Changed
+
+- The textarea's `input` event is dispatched when its value changes, no longer on every editor
+  commit: a caret move and the initial load say nothing.
+- The `source` modal of a document that has not changed shows the stored markup rather than the
+  editor's own rendering of it — still the exact string the field would submit. Confirming it as
+  it is leaves the field alone; confirming it edited hands the field the editor's HTML, as before.
+
 ## [1.0.3] - 2026-09-30
 
 ### Changed
@@ -374,7 +396,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core formatting: bold, italic, underline, strikethrough, bulleted list, numbered list,
   link and unlink, with a safe-scheme allowlist (`http`, `https`, `mailto`, `tel`).
 
-[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/Flexible-User-Experience/lexical-bundle/compare/v1.0.0...v1.0.1

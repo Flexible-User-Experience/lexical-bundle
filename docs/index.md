@@ -207,8 +207,18 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
 | Icons | `assets/icons/*.svg`                | Lucide glyphs served as `lexical:<name>`. |
 
-The Stimulus controller reads the textarea's HTML into Lexical on `connect()` and writes HTML back on
-every update; the textarea is what the browser submits, so server-side nothing special is needed.
+The Stimulus controller reads the textarea's HTML into Lexical on `connect()` and writes HTML back
+whenever the document changes; the textarea is what the browser submits, so server-side nothing
+special is needed.
+
+Until the document changes, the textarea keeps the exact string it was rendered with, even though
+the editor would spell the same content its own way (a class on each paragraph, a span around each
+run of text, entities decoded). A form that was only opened therefore submits its stored value
+untouched, and an "unsaved changes" guard that compares the form with its initial state — Sonata
+Admin's `confirm_exit`, for one — does not take it for a modified one. An edit undone back to the
+loaded document restores that string too. The one exception is content that loses a link or an
+embed to the allowlists while loading (see [Security notes](#security-notes)): that is a change,
+and the textarea takes the editor's HTML at once.
 
 ## Customising
 

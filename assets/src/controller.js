@@ -139,8 +139,8 @@ const EMBED_SIZE_PATTERN = /^\d+(\.\d+)?%?$/;
  * owns the markup — toolbar (icons via `ux_icon`), editable surface, the hidden
  * textarea and the link, source and iframe modals — and this controller wires Meta's
  * Lexical to it: it mounts the editor on the `editable` target and keeps the `input`
- * target (the textarea) in sync with the editor's HTML. Buttons reach it through Stimulus
- * actions/targets.
+ * target (the textarea) in sync with the document, writing the editor's HTML to it once
+ * the document changes and not before. Buttons reach it through Stimulus actions/targets.
  */
 export default class extends Controller {
     static targets = [
@@ -297,6 +297,13 @@ export default class extends Controller {
     confirmSource() {
         const html = this.sourceInputTarget.value.trim();
         this.sourceDialogTarget.close();
+        // Markup edited by hand is the user's own word on what the field should hold, and
+        // what they took out may be exactly what the model drops anyway: the document then
+        // comes out as it was loaded, and the field would go on holding the old markup. So
+        // from here on the field follows the editor, whatever the document turns out to be.
+        if (html !== this.inputTarget.value.trim()) {
+            this.loadedHtml = null;
+        }
         this.editor.update(() => {
             this.#replaceContent(html);
         });
@@ -459,6 +466,9 @@ export default class extends Controller {
                 if (this.#isSafeUrl(linkNode.getURL())) {
                     return;
                 }
+                // Read back by #loadInitialHtml: stored content that loses a link on its
+                // way in is no longer what the field holds.
+                this.stripped = true;
                 linkNode.getChildren().forEach((child) => linkNode.insertBefore(child));
                 linkNode.remove();
             }),
@@ -467,6 +477,7 @@ export default class extends Controller {
             // the document. There is no text to keep, so the whole node goes.
             editor.registerNodeTransform(IframeNode, (iframeNode) => {
                 if (!this.#isEmbeddableUrl(iframeNode.getSrc())) {
+                    this.stripped = true;
                     iframeNode.remove();
                 }
             }),
@@ -521,12 +532,37 @@ export default class extends Controller {
         this.#loadInitialHtml();
     }
 
+    // Read the stored content in, and remember both spellings of it: the string the field
+    // was rendered with and the HTML the editor makes of the same document. They rarely
+    // match — the editor puts a class on every paragraph, wraps every run of text in a span
+    // and decodes entities — and writing its own spelling back on load would change the
+    // value of a field nobody has touched, which a host "unsaved changes" guard that
+    // compares the form with what it was reports on every form that was merely opened.
+    // #syncOut therefore leaves the field alone for as long as the document is this one.
+    //
+    // Unless loading is what changed it: content that lost a link or an embed to the
+    // allowlists has to reach the field, and be saved, as what it is now. No pair is kept
+    // for it, so the field takes the editor's HTML right away.
     #loadInitialHtml() {
-        const html = (this.inputTarget.value || '').trim();
-        this.editor.update(
-            () => this.#replaceContent(html),
-            { tag: 'history-merge', discrete: true },
-        );
+        this.loadedValue = this.inputTarget.value || '';
+        this.loadedHtml = null;
+        this.stripped = false;
+        this.loading = true;
+        try {
+            this.editor.update(
+                () => this.#replaceContent(this.loadedValue.trim()),
+                { tag: 'history-merge', discrete: true },
+            );
+        } finally {
+            // Whatever the load does: left set, this would keep every later edit out of
+            // the field.
+            this.loading = false;
+        }
+        const editorState = this.editor.getEditorState();
+        if (!this.stripped) {
+            this.loadedHtml = this.#readHtml(editorState);
+        }
+        this.#syncOut(editorState);
     }
 
     // Swap the whole document for the given HTML, falling back to one empty paragraph.
@@ -545,14 +581,34 @@ export default class extends Controller {
         }
     }
 
+    // Bring the field up to date with a committed document. Every commit passes through
+    // here, selection-only ones included, so the field is only written — and its `input`
+    // event only dispatched — when its value really changes: a caret move says nothing, and
+    // an edit undone back to the loaded document hands the field its original string.
     #syncOut(editorState) {
-        editorState.read(() => {
+        // The initial load commits like any other update, before there is a loaded document
+        // to compare with; #loadInitialHtml calls back once there is.
+        if (this.loading) {
+            return;
+        }
+        const html = this.#readHtml(editorState);
+        const value = html === this.loadedHtml ? this.loadedValue : html;
+        if (value === this.inputTarget.value) {
+            return;
+        }
+        this.inputTarget.value = value;
+        this.inputTarget.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    // The document as the HTML the field stores.
+    #readHtml(editorState) {
+        return editorState.read(() => {
             // Embeds carry no text, so a document holding nothing but one is empty by the
             // text-content measure — and would be saved as an empty string.
             const isEmpty = '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
-            this.inputTarget.value = isEmpty ? '' : $generateHtmlFromNodes(this.editor, null);
+
+            return isEmpty ? '' : $generateHtmlFromNodes(this.editor, null);
         });
-        this.inputTarget.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // --- Toolbar operations ------------------------------------------------
@@ -638,8 +694,9 @@ export default class extends Controller {
         }
     }
 
-    // Open the source modal pre-filled with the editor's current HTML — the exact
-    // string the hidden textarea would submit, since #syncOut keeps them identical.
+    // Open the source modal pre-filled with the exact string the hidden textarea would
+    // submit: the editor's current HTML or, while the document is still the one that was
+    // loaded, the stored markup itself (see #syncOut).
     #openSource() {
         this.sourceInputTarget.value = this.inputTarget.value;
         this.sourceDialogTarget.showModal();
