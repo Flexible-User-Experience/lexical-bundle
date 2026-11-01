@@ -225,6 +225,7 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 | HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, validation message slot, the link/source/iframe `<dialog>`s. |
 | JS    | `assets/src/controller.js`          | Mounts Lexical, syncs the textarea, drives the toolbar. |
 | JS    | `assets/src/iframe-node.js`         | The `IframeNode` the `iframe` button inserts (import, export, preview). |
+| JS    | `assets/src/html-export.js`         | The `html.export` overrides that keep the stored HTML semantic and class-free. |
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
 | Icons | `assets/icons/*.svg`                | Lucide glyphs served as `lexical:<name>`. |
 
@@ -232,14 +233,24 @@ The Stimulus controller reads the textarea's HTML into Lexical on `connect()` an
 whenever the document changes; the textarea is what the browser submits, so server-side nothing
 special is needed.
 
-Until the document changes, the textarea keeps the exact string it was rendered with, even though
-the editor would spell the same content its own way (a class on each paragraph, a span around each
-run of text, entities decoded). A form that was only opened therefore submits its stored value
-untouched, and an "unsaved changes" guard that compares the form with its initial state — Sonata
-Admin's `confirm_exit`, for one — does not take it for a modified one. An edit undone back to the
-loaded document restores that string too. The one exception is content that loses a link or an
-embed to the allowlists while loading (see [Security notes](#security-notes)): that is a change,
-and the textarea takes the editor's HTML at once.
+What the editor writes is plain, semantic HTML, the same elements its import reads back:
+`<p>`, `<h1>`-`<h6>`, `<blockquote>`, `<ul>` / `<ol>` / `<li>`, `<a href target rel title>`,
+`<strong>`, `<em>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<code>`, `<mark>`, `<br>` and the `<iframe>` of
+an embed, with alignment and indentation as the inline `text-align` and `padding-inline-start`
+styles Lexical writes. The editor's own rendering (a theme class on every block, a `<span>` around
+every run of text, `<b>` doubled over `<strong>`, `data-lexical-*` bookkeeping) never reaches the
+field: `assets/src/html-export.js` overrides the export of the text and block nodes through
+Lexical's `html.export` hook, so a stylesheet rendering the stored content has nothing
+editor-specific to know about.
+
+Until the document changes, the textarea keeps the exact string it was rendered with, even where
+the editor would spell the same content slightly differently (entities decoded, attribute quoting
+normalised). A form that was only opened therefore submits its stored value untouched, and an
+"unsaved changes" guard that compares the form with its initial state — Sonata Admin's
+`confirm_exit`, for one — does not take it for a modified one. An edit undone back to the loaded
+document restores that string too. The one exception is content that loses a link or an embed to
+the allowlists while loading (see [Security notes](#security-notes)): that is a change, and the
+textarea takes the editor's HTML at once.
 
 ## Customising
 

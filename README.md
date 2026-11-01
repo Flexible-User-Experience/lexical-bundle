@@ -10,9 +10,9 @@ The field renders a toolbar (undo / redo, cut / copy / paste — including paste
 bold, italic, underline, strikethrough, subscript / superscript, remove format, text alignment,
 bulleted / numbered lists, indentation, link, unlink, iframe embeds, HTML source editing) and a
 contenteditable surface around a hidden `<textarea>`. The editor reads the
-textarea's HTML on load and writes HTML back on every change, so it is a drop-in replacement for a
-plain textarea and **degrades to that textarea when JavaScript is disabled**. No build step is
-required — everything runs through AssetMapper's importmap.
+textarea's HTML on load and writes plain, semantic HTML back on every change, so it is a drop-in
+replacement for a plain textarea and **degrades to that textarea when JavaScript is disabled**. No
+build step is required — everything runs through AssetMapper's importmap.
 
 ![The rendered LexicalFormType field: the toolbar (history, clipboard, text formats, alignment, lists, indentation, link, iframe and source-code buttons) above the editable surface](docs/screenshot.png)
 
@@ -240,10 +240,13 @@ a preset that has them.
 
 Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 
-The editor stores **HTML**. When you render that HTML on a public page, output it as trusted markup
-(e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` and embeds to `http(s)` frame
-sources by the editor, but you remain responsible for sanitising any HTML that reaches the field
-from other sources.
+The editor stores **plain, semantic HTML**: `<p>`, `<strong>`, `<em>`, `<u>`, `<s>`, `<sub>`,
+`<sup>`, `<ul>` / `<ol>` / `<li>`, `<a href target rel>`, `<iframe>`, with alignment and indentation
+as inline `text-align` / `padding-inline-start` styles — no editor classes, no wrapping spans, nothing
+a stylesheet of yours has to know about. When you render that HTML on a public page, output it as
+trusted markup (e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` and embeds to
+`http(s)` frame sources by the editor, but you remain responsible for sanitising any HTML that reaches
+the field from other sources.
 
 ## How it works
 

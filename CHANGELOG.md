@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The HTML the field stores is plain and semantic. Lexical's own export spells a document the
+  way the editor renders it - a theme class on every block (`<p class="lexical__p">`), every run
+  of text in a `<span style="white-space: pre-wrap;">`, formats doubled up as `<b><strong>` - and
+  that is what reached the textarea as soon as a document was edited. The controller now hands
+  Lexical an `html.export` override (`assets/src/html-export.js`): blocks keep everything but the
+  theme class and the `data-lexical-indent` bookkeeping (alignment and indentation stay as the
+  `text-align` / `padding-inline-start` inline styles Lexical reads back), and a run of text is a
+  bare text node wrapped in `<strong>`, `<em>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<code>` or
+  `<mark>` for each format it carries (a `<span style>` only when it has an inline style of its
+  own). `<p>Hello <strong>bold</strong> and <em>italic</em> text.</p>` is now stored as exactly
+  that. Content stored by earlier versions re-opens unchanged - the classes and spans were always
+  ignored on import - and is rewritten in the new form the next time it is edited and saved.
+  Consecutive spaces, which the dropped `white-space: pre-wrap` kept apart when the stored HTML
+  was rendered, now collapse as in any HTML; the editor never showed them anyway. Verified in
+  the browser: the exported document re-imports and re-exports byte for byte, embeds, links,
+  alignment and indentation included.
+
 - The default toolbar is leaner. `LexicalFormType::DEFAULT_TOOLBAR` now lists `undo`, `redo` /
   `bold`, `italic`, `underline`, `strikethrough`, `remove-format` / `bullet`, `number` / `indent`,
   `outdent` / `link`, `unlink` / `iframe` (14 buttons in six groups); the clipboard buttons,
