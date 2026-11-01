@@ -1,0 +1,26 @@
+name: Lexical version check
+
+# Once a week, compare the Lexical constraint in assets/package.json with the latest release on
+# npm; the run fails (and notifies) when a release the constraint does not cover is out, which is
+# the cue to read its release notes and bump. Dependabot cannot watch this constraint: it lives
+# in the bundle's own package.json section, not in a dependency manifest it understands.
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch: ~
+
+jobs:
+  check:
+    name: "Is a newer Lexical out?"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Compare assets/package.json with npm
+        run: php .github/scripts/check-lexical-version.php
