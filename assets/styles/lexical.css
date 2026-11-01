@@ -1,7 +1,10 @@
 /* Lexical rich-text editor — FlexibleUx\Form\Type\LexicalFormType.
    Markup: lexical_widget form theme · Behaviour: assets/src/controller.js
-   This stylesheet is imported by the Stimulus controller, so AssetMapper links it
-   automatically; consumers do not need to include it themselves. */
+   This stylesheet is the editor's chrome (toolbar, surface, modals, the in-editor rendering
+   of text formats and embeds). The content itself — paragraphs, lists, links — is styled by
+   lexical-content.css, which the editable surface shares with the rendered page. Both are
+   imported by the Stimulus controller, so AssetMapper links them automatically; consumers
+   do not need to include them for the editor. */
 
 .lexical {
     border: 1px solid #d2d6de;
@@ -116,33 +119,6 @@
 .lexical__icon {
     width: 16px;
     height: 16px;
-}
-
-.lexical__p {
-    margin: 0 0 8px;
-}
-
-.lexical__ul,
-.lexical__ol {
-    margin: 0 0 8px 1.5em;
-    padding: 0;
-}
-
-.lexical__ul {
-    list-style: disc;
-}
-
-.lexical__ol {
-    list-style: decimal;
-}
-
-.lexical__li {
-    margin: 2px 0;
-}
-
-.lexical__link {
-    color: #3c8dbc;
-    text-decoration: underline;
 }
 
 /* Embedded <iframe> (the `iframe` toolbar button). The wrapper is the block Lexical

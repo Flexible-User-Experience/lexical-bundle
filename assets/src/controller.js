@@ -1,4 +1,5 @@
 import '../styles/lexical.css';
+import '../styles/lexical-content.css';
 
 import { Controller } from '@hotwired/stimulus';
 import {
@@ -65,8 +66,11 @@ import * as htmlExportModule from './html-export.js';
 const { IframeNode, $createIframeNode, $isIframeNode } = iframeNodeModule;
 const { createHtmlExport } = htmlExportModule;
 
-// Lexical node → CSS class map. The classes themselves live in
-// ../styles/lexical.css, keeping this file behaviour-only.
+// Lexical node → CSS class map. The text-format and embed classes live in
+// ../styles/lexical.css; the block classes stay for stylesheets that target the editor's own
+// DOM, while the blocks themselves are styled through lexical-content.css, which the
+// editable surface shares with the rendered page (see the form theme). This file stays
+// behaviour-only.
 const THEME = {
     paragraph: 'lexical__p',
     text: {

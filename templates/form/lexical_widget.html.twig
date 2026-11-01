@@ -70,7 +70,9 @@
                 {%- endif -%}
             {%- endfor -%}
         </div>
-        <div class="lexical__editable" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
+        {#- `lexical-content` is the class the rendered page wraps stored content in (see the
+            lexical_content filter), so the surface and the page share one content stylesheet. -#}
+        <div class="lexical__editable lexical-content" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
              {{ stimulus_target('lexical', 'editable')|stimulus_action('lexical', 'markChanged', 'focusout') }}></div>
         {#- The browser's validation message for the (hidden, hence unfocusable) textarea, shown by
             the controller when the form is submitted with an empty required field. -#}
