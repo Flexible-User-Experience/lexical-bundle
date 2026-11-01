@@ -175,11 +175,23 @@ export default class extends Controller {
         this.#createEditor();
         this.#wireField();
         this.element.classList.add('lexical--ready');
+        // The editor is up and holds the stored document: the moment for an application
+        // controller to register its own commands, transforms or listeners on it.
+        this.dispatch('connect', { detail: { editor: this.editor, element: this.element } });
     }
 
     disconnect() {
         this.element.classList.remove('lexical--ready', 'lexical--empty', 'lexical--invalid');
         this.#unwireField();
+        if (this.editor) {
+            // Still a live editor here, so whatever `lexical:connect` registered can be torn
+            // down. Stimulus disconnects a controller after its element left the document
+            // (a Turbo visit, a removed form row), and an event dispatched on a detached
+            // element reaches no `document` listener - so it goes to `document` directly
+            // then, with the element in the detail for listeners that filter by it.
+            const detail = { editor: this.editor, element: this.element };
+            this.dispatch('disconnect', this.element.isConnected ? { detail } : { detail, target: document });
+        }
         if (this.teardown) {
             this.teardown();
             this.teardown = null;
@@ -462,33 +474,40 @@ export default class extends Controller {
         // extensions exist too, but each carries behaviour of its own (RichTextExtension
         // mounts an aria-live region for heading announcements, for one), so adopting
         // them is a separate decision from retiring a deprecated command.
-        const editor = buildEditorFromExtensions(
-            defineExtension({
-                name: '@flexible-ux/lexical-bundle',
-                namespace: 'lexical',
-                editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
-                nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
-                theme: THEME,
-                // The field stores semantic HTML without the editor's theme classes and
-                // spans; see html-export.js. Import stays Lexical's own.
-                html: { export: createHtmlExport() },
-                onError: (error) => console.error('[lexical]', error),
-                dependencies: [
-                    configExtension(HistoryExtension, { delay: 300 }),
-                    // Every HTML paste and drop passes through this middleware before Lexical
-                    // imports it, whatever handler triggered the import (Ctrl+V, the toolbar
-                    // buttons, a drop): markup from Word, Outlook or Google Docs is cleaned on
-                    // its way in, so pasting from Word just works and the paste-word button is
-                    // only a way to force the cleaning. `$next(html)` hands the (possibly
-                    // rewritten) HTML to Lexical's own import with the same selection.
-                    configExtension(ClipboardImportExtension, {
-                        $importMimeType: {
-                            'text/html': [(html, selection, $next) => $next(this.#preparePastedHtml(html))],
-                        },
-                    }),
-                ],
-            }),
-        );
+        const config = {
+            name: '@flexible-ux/lexical-bundle',
+            namespace: 'lexical',
+            editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
+            nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
+            // A copy: a listener of `lexical:pre-connect` may add to it for this editor only.
+            theme: { ...THEME, text: { ...THEME.text }, list: { ...THEME.list } },
+            // The field stores semantic HTML without the editor's theme classes and
+            // spans; see html-export.js. Import stays Lexical's own.
+            html: { export: createHtmlExport() },
+            onError: (error) => console.error('[lexical]', error),
+            dependencies: [
+                configExtension(HistoryExtension, { delay: 300 }),
+                // Every HTML paste and drop passes through this middleware before Lexical
+                // imports it, whatever handler triggered the import (Ctrl+V, the toolbar
+                // buttons, a drop): markup from Word, Outlook or Google Docs is cleaned on
+                // its way in, so pasting from Word just works and the paste-word button is
+                // only a way to force the cleaning. `$next(html)` hands the (possibly
+                // rewritten) HTML to Lexical's own import with the same selection.
+                configExtension(ClipboardImportExtension, {
+                    $importMimeType: {
+                        'text/html': [(html, selection, $next) => $next(this.#preparePastedHtml(html))],
+                    },
+                }),
+            ],
+        };
+        // The Symfony UX way of extending a controller: an application controller listening
+        // to `lexical:pre-connect` (on the element or on `document`) gets the extension
+        // config before the editor exists and may push its own nodes and Lexical
+        // extensions, add theme classes or swap an HTML export - the same hooks this
+        // controller uses itself, with no need to replace it.
+        this.dispatch('pre-connect', { detail: { config, element: this.element } });
+
+        const editor = buildEditorFromExtensions(defineExtension(config));
         this.editor = editor;
         editor.setRootElement(this.editableTarget);
 
