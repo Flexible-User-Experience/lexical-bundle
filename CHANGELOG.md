@@ -5,6 +5,59 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.52.0`
+  to `^0.53.0`, and the documented `importmap:require` command (README and `docs/index.md`) now
+  carries `^0.53.0`. None of the four
+  [v0.53.0](https://github.com/facebook/lexical/releases/tag/v0.53.0) breaking changes reaches
+  the bundle:
+  - *The extensions deprecated in v0.52.0 and earlier are removed* (`LinkImportExtension`,
+    `ListImportExtension`, `RichTextImportExtension`, `HorizontalRuleImportExtension` and the
+    code, table and mdast ones). The controller takes only `HistoryExtension` as an extension;
+    rich text, lists and links are still wired through `registerRichText()`, `registerList()`
+    and the `TOGGLE_LINK_COMMAND` handler, none of which is deprecated.
+  - *`ElementNode.reconcileObservedMutation` restores the committed children's DOM* - the
+    internal method behind the new mouse-drag selection across inline decorators. The bundle
+    never calls it, and its one decorator, `IframeNode`, is a block (`isInline()` is false), so
+    the new pointer handling does not apply to it. Verified with a real click on an embed: it
+    still yields a `NodeSelection`, the toolbar button lights up, Backspace removes it and
+    `undo` brings it back.
+  - *`@lexical/mdast` stores table alignment as the cell paragraphs' format.* The bundle does not
+    use `@lexical/mdast`.
+  - *The unchecked generic type arguments of `getParent()`, `$getNodeByKey()` and friends are
+    removed.* A TypeScript-only change: the controller is plain JavaScript and already calls
+    `$getNodeByKey(key)` without a type argument.
+  Of the behaviour changes, the two in `@lexical/link` concern `ClickableLinkExtension` /
+  `registerClickableLink`, which the bundle does not register (links are edited through the
+  toolbar dialog, not followed), and the link dialog already sets `rel="noopener noreferrer"`
+  on new-tab links; `$patchStyleText` and the Markdown, code and React changes are not used.
+  One fix does reach the bundle: `$toggleLink(null)`, which the `unlink` button dispatches, no
+  longer fails when the selection only touches a link's edge (facebook/lexical#9412). On
+  0.52.0 a selection anchored at the first character of a link and extended backwards out of it
+  left the button enabled but turned the click into a no-op, with a `Cannot read properties of
+  undefined (reading 'insertAfter')` error in the console; on 0.53.0 the same selection returns
+  quietly. Verified against 0.53.0 through AssetMapper's `importmap:require` and
+  StimulusBundle's loader like the previous bumps: the editor mounts, a form that was only
+  opened still submits its stored string, the allowlists still unwrap a `javascript:` link and
+  drop a `data:` frame on load, the toolbar follows real clicks and arrow keys, bold pressed on
+  a caret applies to the text typed next, and the link, iframe and source modals, lists,
+  indentation, alignment, `remove-format`, `undo` / `redo`, `cut` / `copy` of an embed and its
+  paste back, `paste-word` list rebuilding, the clipboard-denied hint, both `toJSON()` forms and
+  a Stimulus disconnect / reconnect cycle behave as before.
+- A consuming application's `importmap.php` gains two entries after the update,
+  `@lexical/extension/BlockIdExtension` and `@lexical/extension/NodeStructureExtension`: the
+  two new opt-in extensions are exported from `@lexical/extension`'s main entry, so AssetMapper
+  maps their modules like the other `@lexical/extension/*` ones, and the nine packages now pull
+  in 44 entries instead of 42 (the README says so). `@lexical/html/BlockIdHTMLExtension` has an
+  entry point of its own and is not pulled in. The bundle registers neither extension, and
+  Lexical documents that editors which do not register them are unchanged. Re-running the
+  documented `importmap:require` command over a 0.52.0 map re-pins every entry at 0.53.0 and
+  leaves nothing behind; `@preact/signals-core` moves from 1.14.4 to 1.14.5, within the
+  `^1.14.4` range `@lexical/extension` requires.
+
 ## [1.0.4] - 2026-10-05
 
 ### Fixed

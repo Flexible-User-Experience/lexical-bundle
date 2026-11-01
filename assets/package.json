@@ -13,15 +13,15 @@
         },
         "importmap": {
             "@hotwired/stimulus": "^3.0.0",
-            "@lexical/clipboard": "^0.52.0",
-            "@lexical/extension": "^0.52.0",
-            "@lexical/history": "^0.52.0",
-            "@lexical/html": "^0.52.0",
-            "@lexical/link": "^0.52.0",
-            "@lexical/list": "^0.52.0",
-            "@lexical/rich-text": "^0.52.0",
-            "@lexical/utils": "^0.52.0",
-            "lexical": "^0.52.0"
+            "@lexical/clipboard": "^0.53.0",
+            "@lexical/extension": "^0.53.0",
+            "@lexical/history": "^0.53.0",
+            "@lexical/html": "^0.53.0",
+            "@lexical/link": "^0.53.0",
+            "@lexical/list": "^0.53.0",
+            "@lexical/rich-text": "^0.53.0",
+            "@lexical/utils": "^0.53.0",
+            "lexical": "^0.53.0"
         }
     },
     "type": "module",
