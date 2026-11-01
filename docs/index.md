@@ -76,6 +76,8 @@ to a `string`/`text` property like any textarea.
 | `toolbar`              | `string[]` | the preset's (`default`: 14 buttons in six groups) | Ordered entries: button names and `\|` separators. |
 | `height`               | `string`   | the preset's (`'200px'`)          | Minimum editable height (any CSS length). |
 | `allowed_link_schemes` | `string[]` | the preset's (`['http','https','mailto','tel']`) | URL schemes the link modal accepts. |
+| `allow_relative_links` | `bool`     | `true` (the bundle's `allow_relative_links` key) | Also accept `/path`, `#fragment` and `?query` links. |
+| `sanitize`             | `bool`     | `true` (the bundle's `sanitize` key) | Run a changed submission through the bundle's HTML sanitizer. |
 
 `LexicalFormType::DEFAULT_TOOLBAR` is `undo`, `redo` · `bold`, `italic`, `underline`,
 `strikethrough`, `remove-format` · `bullet`, `number` · `indent`, `outdent` · `link`, `unlink` ·
@@ -85,7 +87,9 @@ to a `string`/`text` property like any textarea.
 `allowed_link_schemes` entries may be written with or without the trailing colon and in any case
 (`https`, `https:` and `HTTPS:` are equivalent). The list is normalised server-side and handed to the
 Stimulus controller as the `allowedLinkSchemes` value, so validation happens in the link modal before a
-link is inserted:
+link is inserted. With `allow_relative_links` (the default) a root-relative path, a fragment or a query
+passes too (`/about`, `#top`, `?page=2`; a protocol-relative `//host` does not, having no scheme to
+check), and the same switch reaches the sanitizer:
 
 ```php
 $builder->add('description', LexicalFormType::class, [
@@ -160,12 +164,16 @@ behaviour and always works. Pasted content goes through Lexical's model like any
 markup the editor cannot represent is normalised away, and links are checked against
 `allowed_link_schemes` (a disallowed scheme unwraps the link, as in the `source` modal).
 
-`paste-word` additionally scrubs the clipboard's HTML the way CKEditor's *Paste from Word* did
-before importing it: Word's conditional comments and Office-namespace elements (`<o:p>`, …) are
-dropped, and consecutive `mso-list` paragraphs — which would otherwise import as plain paragraphs
-carrying a literal "·" or "1." marker — are rebuilt as real bulleted/numbered lists. The rebuilt
-lists are flat: nesting levels are not reconstructed. Everything else Word adds (Mso classes,
-`mso-*` styles) is ignored by the model import anyway.
+Every HTML paste and drop passes through a clipboard import middleware (`@lexical/clipboard`'s
+`ClipboardImportExtension`, configured by the controller) before Lexical imports it. When the markup
+carries Office's fingerprints (an Office XML namespace, `mso-` styles, `Mso` classes, `<o:p>`) it is
+scrubbed the way CKEditor's *Paste from Word* did: conditional comments and Office-namespace elements
+are dropped, and consecutive `mso-list` paragraphs — which would otherwise import as plain paragraphs
+carrying a literal "·" or "1." marker — are rebuilt as real bulleted/numbered lists, nested as Word
+declared them (`mso-list: l0 level2 lfo1`: level 2 goes inside the level-1 item before it). Any other
+HTML passes through untouched. `paste-word` forces the clean-up for one paste, for markup the
+detection misses. Everything else Word adds (Mso classes, `mso-*` styles) is ignored by the model
+import anyway.
 
 `remove-format` strips the inline text formats (bold, italic, underline, strikethrough,
 sub/superscript and inline text styles) from the selection while leaving block structure — lists,
@@ -354,7 +362,8 @@ and may hold markup from elsewhere that the editor would strip; an untouched fie
 ## Security notes
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
-  `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
+  `https`, `mailto` and `tel`), plus root-relative, fragment and query links while
+  `allow_relative_links` is on. Anything else — notably `javascript:` and `data:` — is rejected in the
   link modal, and everywhere else the allowlist is enforced by a Lexical node transform: whichever way
   a link enters the document — the `source` modal, the `paste` / `paste-word` buttons, a native
   Ctrl+V paste, drag-and-drop, or the initial load of already-stored content — a link whose scheme is

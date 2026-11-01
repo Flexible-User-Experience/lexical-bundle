@@ -11,6 +11,9 @@ flexible_ux_lexical:
     # URL schemes the link modal accepts; anything else (notably javascript: and data:) is rejected.
     # allowed_link_schemes: ['http', 'https', 'mailto', 'tel']
 
+    # Also accept root-relative paths, fragments and queries as links (/about, #top, ?page=2).
+    # allow_relative_links: true
+
     # Run a changed submission through the bundle's HTML sanitizer (the editor's own allowlist).
     # sanitize: true
 

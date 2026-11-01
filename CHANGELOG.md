@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pasting from Word, Outlook or Google Docs just works. Every HTML paste and drop now passes
+  through a clipboard import middleware (`@lexical/clipboard`'s `ClipboardImportExtension`, the
+  `$next(data)` form Lexical 0.53.0 introduced) before Lexical imports it; markup carrying
+  Office's fingerprints is scrubbed on its way in, and the Office lists are rebuilt with their
+  nesting (`mso-list: ... level2 ...` goes inside the level-1 item before it) instead of flat.
+  Other HTML passes through untouched. The `paste-word` button stays as a way to force the
+  clean-up for one paste; it no longer pre-processes the clipboard itself.
+- Relative links. The link modal and the import allowlist accept a root-relative path
+  (`/about`), a fragment (`#top`) or a query (`?page=2`) besides the allowed schemes, so the
+  site's own pages can finally be linked; a protocol-relative `//host` is still rejected. The
+  new `allow_relative_links` form option and bundle configuration key (default `true`) turn it
+  off, and the sanitizer follows the same switch. The URL field of the link modal is a text
+  input now (`type="url"` rejected relative URLs on its own), and the `error.invalid_url`
+  message mentions paths in every locale.
 - Rendering and sanitising stored content. The `lexical_content` Twig filter sanitises a field's
   HTML and wraps it in `<div class="lexical-content">`; `lexical_sanitize` sanitises without the
   wrapper. Behind them is the new `flexible_ux_lexical.html_sanitizer` service (autowirable as

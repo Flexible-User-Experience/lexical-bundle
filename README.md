@@ -119,6 +119,7 @@ $builder->add('description', LexicalFormType::class, [
 | `toolbar`              | `string[]` | the preset's; `default` has 14 buttons in six `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
 | `height`               | `string`   | the preset's; `'200px'`                    | Minimum editable height (any CSS length).               |
 | `allowed_link_schemes` | `string[]` | the preset's; `['http','https','mailto','tel']` | URL schemes the link modal accepts.                |
+| `allow_relative_links` | `bool`     | `true` (the bundle's `allow_relative_links` key) | Also accept `/path`, `#fragment` and `?query` links. |
 | `sanitize`             | `bool`     | `true` (the bundle's `sanitize` key)       | Run a changed submission through the bundle's HTML sanitizer. |
 
 #### Presets
@@ -146,11 +147,14 @@ Available buttons:
 `align-right` · `align-justify` · `bullet` · `number` · `indent` · `outdent` · `link` · `unlink` ·
 `iframe` · `source`
 
-The `paste` and `paste-word` buttons read the system clipboard through the asynchronous Clipboard
-API, so they need a secure context and (browser-dependent) the user's permission; when access is
-denied the editor shows a translated hint to paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> instead.
-`paste-word` additionally cleans Word's markup and rebuilds its lists — see
-[`docs/index.md`](docs/index.md) for details.
+Pasting from Word, Outlook or Google Docs just works: every HTML paste (and drop) goes through a
+clipboard middleware that recognises Office's markup and cleans it on its way in — conditional
+comments and Office namespaces dropped, `mso-list` paragraphs rebuilt as real, nested
+bulleted / numbered lists. The `paste` and `paste-word` buttons read the system clipboard through
+the asynchronous Clipboard API, so they need a secure context and (browser-dependent) the user's
+permission; when access is denied the editor shows a translated hint to paste with
+<kbd>Ctrl</kbd>+<kbd>V</kbd> instead. `paste-word` forces the Office clean-up for markup the
+detection misses — see [`docs/index.md`](docs/index.md) for details.
 
 The `iframe` button embeds external content (a video, a map, a form) the way CKEditor's *IFrame*
 dialog did: a modal asks for the URL, an optional width and height, an advisory title and whether
@@ -182,14 +186,17 @@ divider. An unknown button name raises a clear `InvalidOptionsException` listing
 The field extends `TextareaType`, so all textarea/text field options (`label`, `required`, `attr`,
 `constraints`, …) apply too.
 
-#### Link schemes
+#### Link schemes and relative links
 
 Restrict (or widen) which link schemes the editor may produce — entries may be written with or without
-the trailing colon, and anything outside the list is rejected in the link modal:
+the trailing colon, and anything outside the list is rejected in the link modal. A root-relative path
+(`/about`), a fragment (`#top`) or a query (`?page=2`) is accepted as well, because linking the site's
+own pages is what a CMS does all day; turn that off with `allow_relative_links`:
 
 ```php
 $builder->add('description', LexicalFormType::class, [
     'allowed_link_schemes' => ['https'], // https-only links
+    'allow_relative_links' => false,     // ... and absolute ones only
 ]);
 ```
 
