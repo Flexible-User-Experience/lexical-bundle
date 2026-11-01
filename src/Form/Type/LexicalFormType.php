@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace FlexibleUx\LexicalBundle\Form\Type;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Event\PreSubmitEvent;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\OptionsResolver\Exception\InvalidOptionsException;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -31,6 +35,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *  - `allowed_link_schemes`: URL schemes the link modal accepts, written with or without
  *    the trailing colon. Defaults to `http`, `https`, `mailto` and `tel`; anything outside
  *    the list (notably `javascript:` and `data:`) is rejected.
+ *  - `sanitize`: whether what the field receives on submission is run through the bundle's
+ *    HTML sanitizer (the allowlist of what the editor produces), the server-side counterpart
+ *    of the editor's own checks. Defaults to the bundle configuration (`true`). A field that
+ *    submits the very string it was rendered with is left alone either way: that string is
+ *    the application's own data, not something this request produced.
  *
  * The presets come from the bundle configuration (`config/packages/flexible_ux_lexical.yaml`)
  * and are injected through the constructor; an option passed to a field always wins over
@@ -140,13 +149,42 @@ final class LexicalFormType extends AbstractType
     private readonly array $presets;
 
     /**
-     * @param array<string, array{toolbar?: list<string>, height?: string, allowed_link_schemes?: list<string>}> $presets
-     *                                                                                                                   Presets by name; a key a preset leaves out is taken from the `default` preset,
-     *                                                                                                                   which itself falls back to the class constants. `full` is added when missing.
+     * @param array<string, array{toolbar?: list<string>, height?: string, allowed_link_schemes?: list<string>}> $presets           Presets by name; a key a preset leaves out is taken from the `default` preset,
+     *                                                                                                                             which itself falls back to the class constants. `full` is added when missing.
+     * @param HtmlSanitizerInterface|null                                                                          $sanitizer         The sanitizer behind the `sanitize` option; without one the option has no effect
+     * @param bool                                                                                                 $sanitizeByDefault The default of the `sanitize` option (the bundle's `sanitize` configuration key)
      */
-    public function __construct(array $presets = [])
-    {
+    public function __construct(
+        array $presets = [],
+        private readonly ?HtmlSanitizerInterface $sanitizer = null,
+        private readonly bool $sanitizeByDefault = true,
+    ) {
         $this->presets = self::resolvePresets($presets);
+    }
+
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        if (!$options['sanitize'] || null === $this->sanitizer) {
+            return;
+        }
+
+        $sanitizer = $this->sanitizer;
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, static function (PreSubmitEvent $event) use ($sanitizer): void {
+            $submitted = $event->getData();
+            if (!\is_string($submitted) || '' === trim($submitted)) {
+                return;
+            }
+            // Only what this request produced is sanitised. A field that was only opened
+            // submits the string it was rendered with - the application's own data, which
+            // may legitimately hold markup the editor would never produce (content migrated
+            // from another editor, say). Stripping that from an untouched field would be
+            // silent data loss, so the stored string passes as it is.
+            $initial = $event->getForm()->getViewData();
+            if (\is_string($initial) && trim($initial) === trim($submitted)) {
+                return;
+            }
+            $event->setData($sanitizer->sanitize($submitted));
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -157,7 +195,9 @@ final class LexicalFormType extends AbstractType
             'toolbar' => static fn (Options $options): array => $presets[$options['preset']]['toolbar'],
             'height' => static fn (Options $options): string => $presets[$options['preset']]['height'],
             'allowed_link_schemes' => static fn (Options $options): array => $presets[$options['preset']]['allowed_link_schemes'],
+            'sanitize' => $this->sanitizeByDefault,
         ]);
+        $resolver->setAllowedTypes('sanitize', 'bool');
         $resolver->setAllowedTypes('preset', 'string');
         $resolver->setAllowedValues('preset', array_keys($presets));
         $resolver->setAllowedTypes('toolbar', 'string[]');

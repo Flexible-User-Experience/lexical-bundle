@@ -11,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\AssetMapper\ImportMap\JavaScriptImport;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Twig\Environment;
 
 /**
@@ -43,6 +44,78 @@ final class BundleIntegrationTest extends KernelTestCase
             LexicalFormType::class,
             self::getContainer()->get('flexible_ux_lexical.form.type.lexical'),
         );
+    }
+
+    public function testTheSanitizerIsExposedForAutowiring(): void
+    {
+        self::bootKernel();
+
+        $sanitizer = self::getContainer()->get('test.lexical_sanitizer');
+
+        self::assertInstanceOf(HtmlSanitizerInterface::class, $sanitizer);
+        self::assertSame('<p>Hi</p>', $sanitizer->sanitize('<p onclick="x()">Hi<script>1</script></p>'));
+    }
+
+    public function testTheContentFiltersSanitizeAndWrapStoredHtml(): void
+    {
+        self::bootKernel();
+        /** @var Environment $twig */
+        $twig = self::getContainer()->get('test.twig');
+        $stored = '<p>Hello <strong>bold</strong></p><script>alert(1)</script>';
+
+        self::assertSame(
+            '<div class="lexical-content"><p>Hello <strong>bold</strong></p></div>',
+            $twig->createTemplate('{{ html|lexical_content }}')->render(['html' => $stored]),
+        );
+        self::assertSame(
+            '<div class="prose"><p>Hello <strong>bold</strong></p></div>',
+            $twig->createTemplate("{{ html|lexical_content('prose') }}")->render(['html' => $stored]),
+        );
+        self::assertSame(
+            '<p>Hello <strong>bold</strong></p>',
+            $twig->createTemplate('{{ html|lexical_sanitize }}')->render(['html' => $stored]),
+        );
+        // Marked safe: no escaping, no |raw needed. Empty content renders an empty container.
+        self::assertSame('<div class="lexical-content"></div>', $twig->createTemplate('{{ html|lexical_content }}')->render(['html' => null]));
+    }
+
+    public function testSubmissionsAreSanitizedUnlessUnchanged(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get('test.form.factory');
+        $stored = '<p>Legacy <table><tr><td>table</td></tr></table></p>';
+
+        // The stored string, submitted as it was rendered: the application's own data, left alone.
+        $untouched = $factory->create(LexicalFormType::class, $stored);
+        $untouched->submit($stored);
+        self::assertSame($stored, $untouched->getData());
+
+        // A changed submission goes through the sanitizer.
+        $edited = $factory->create(LexicalFormType::class, $stored);
+        $edited->submit('<p>Edited<script>alert(1)</script></p><p onclick="x()">more</p>');
+        self::assertSame('<p>Edited</p><p>more</p>', $edited->getData());
+
+        // Opt out per field.
+        $raw = $factory->create(LexicalFormType::class, $stored, ['sanitize' => false]);
+        $raw->submit('<p>Edited<script>alert(1)</script></p>');
+        self::assertSame('<p>Edited<script>alert(1)</script></p>', $raw->getData());
+    }
+
+    public function testSanitizingSubmissionsCanBeDisabledApplicationWide(): void
+    {
+        $kernel = new TestKernel('test', false, ['sanitize' => false]);
+        $kernel->boot();
+
+        $form = $kernel->getContainer()->get('test.form.factory')->create(LexicalFormType::class, '<p>a</p>');
+        $form->submit('<p>b<script>1</script></p>');
+        self::assertSame('<p>b<script>1</script></p>', $form->getData());
+
+        // ... and re-enabled for one field.
+        $form = $kernel->getContainer()->get('test.form.factory')->create(LexicalFormType::class, '<p>a</p>', ['sanitize' => true]);
+        $form->submit('<p>b<script>1</script></p>');
+        self::assertSame('<p>b</p>', $form->getData());
+
+        $kernel->shutdown();
     }
 
     public function testFormThemeIsPrepended(): void
@@ -93,6 +166,7 @@ final class BundleIntegrationTest extends KernelTestCase
         self::assertContains('@flexible-ux/lexical-bundle/src/iframe-node.js', $imported);
         self::assertContains('@flexible-ux/lexical-bundle/src/html-export.js', $imported);
         self::assertContains('@flexible-ux/lexical-bundle/styles/lexical.css', $imported);
+        self::assertContains('@flexible-ux/lexical-bundle/styles/lexical-content.css', $imported);
     }
 
     public function testWidgetRendersEditorMarkup(): void

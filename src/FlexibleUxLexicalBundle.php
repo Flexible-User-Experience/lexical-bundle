@@ -58,6 +58,10 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
                     ->scalarPrototype()->end()
                     ->defaultValue(LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES)
                 ->end()
+                ->booleanNode('sanitize')
+                    ->info('Run what a field receives on submission through the bundle\'s HTML sanitizer (the allowlist of what the editor produces). A field that submits the string it was rendered with is left alone. Overridable per field with the "sanitize" option.')
+                    ->defaultTrue()
+                ->end()
                 ->arrayNode('presets')
                     ->info(\sprintf(
                         'Named presets a field selects with its "preset" option. A key a preset leaves out is taken from the "%s" preset (the three options above); "%s" (every button) is built in.',
@@ -120,6 +124,17 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
         }
 
         $container->setParameter('flexible_ux_lexical.presets', $presets);
+        $container->setParameter('flexible_ux_lexical.sanitize', $config['sanitize']);
+
+        // The sanitizer serves every field, whatever its preset, so its link allowlist is the
+        // union of the presets' schemes - any link a field may legitimately produce passes.
+        $schemes = [];
+        foreach ($presets as $preset) {
+            foreach ($preset['allowed_link_schemes'] ?? LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES as $scheme) {
+                $schemes[] = rtrim(strtolower(trim((string) $scheme)), ':');
+            }
+        }
+        $container->setParameter('flexible_ux_lexical.sanitizer.allowed_link_schemes', array_values(array_unique($schemes)));
 
         $configurator->import('../config/services.php');
     }
