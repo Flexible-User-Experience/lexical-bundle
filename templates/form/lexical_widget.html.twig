@@ -72,6 +72,9 @@
         </div>
         <div class="lexical__editable" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
              {{ stimulus_target('lexical', 'editable')|stimulus_action('lexical', 'markChanged', 'focusout') }}></div>
+        {#- The browser's validation message for the (hidden, hence unfocusable) textarea, shown by
+            the controller when the form is submitted with an empty required field. -#}
+        <p class="lexical__error" role="alert" hidden {{ stimulus_target('lexical', 'error') }}></p>
         {%- set attr = attr|merge(stimulus_target('lexical', 'input').toArray()) -%}
         {{- block('textarea_widget') -}}
         {#- Native <dialog> link modal. Kept self-contained (plain buttons + Enter to

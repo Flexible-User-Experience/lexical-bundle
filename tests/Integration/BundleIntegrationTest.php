@@ -121,6 +121,10 @@ final class BundleIntegrationTest extends KernelTestCase
         // Translated label (default locale en) and the three modals (link + source + iframe).
         self::assertStringContainsString('Bold', $html);
         self::assertStringContainsString('class="lexical__dialog"', $html);
+
+        // The slot the controller fills with the browser's validation message when the form
+        // is submitted with an empty required field (the hidden textarea cannot show it).
+        self::assertStringContainsString('<p class="lexical__error" role="alert" hidden data-lexical-target="error"></p>', $html);
         self::assertStringContainsString('data-lexical-target="sourceDialog"', $html);
         self::assertStringContainsString('data-lexical-target="iframeDialog"', $html);
 
@@ -131,6 +135,23 @@ final class BundleIntegrationTest extends KernelTestCase
         // Default link-scheme allowlist reaches the controller.
         self::assertStringContainsString('data-lexical-allowed-link-schemes-value=', $html);
         self::assertStringContainsString('["http","https","mailto","tel"]', html_entity_decode($html));
+    }
+
+    public function testRequiredAndPlaceholderReachTheTextarea(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        // The controller mirrors these two textarea attributes onto the editable surface
+        // (aria-required, the placeholder) and listens to the textarea's `invalid` event, so
+        // the standard form options have to reach the textarea exactly as for TextareaType.
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, ['required' => true, 'attr' => ['placeholder' => 'Write something...']])
+            ->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertMatchesRegularExpression('/<textarea[^>]* required="required"[^>]*>/', $html);
+        self::assertMatchesRegularExpression('/<textarea[^>]* placeholder="Write something\.\.\."[^>]*>/', $html);
     }
 
     public function testDefaultToolbarRendersEveryButton(): void

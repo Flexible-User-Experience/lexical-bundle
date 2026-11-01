@@ -118,6 +118,12 @@ const ALIGN_FORMATS = {
     'align-justify': 'justify',
 };
 
+// The toolbar buttons whose pressed state the toolbar reflects (and announces through
+// aria-pressed): the text formats, the alignments, the two list types, link and iframe.
+const TOGGLE_COMMANDS = new Set([
+    ...TEXT_FORMATS, ...Object.keys(ALIGN_FORMATS), 'bullet', 'number', 'link', 'iframe',
+]);
+
 // Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
 // pass the attribute. Mirrors LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES. Whatever the
 // list, anything outside it — notably `javascript:` and `data:` — is rejected, so stored
@@ -144,7 +150,7 @@ const EMBED_SIZE_PATTERN = /^\d+(\.\d+)?%?$/;
  */
 export default class extends Controller {
     static targets = [
-        'input', 'editable', 'button',
+        'input', 'editable', 'button', 'error',
         'dialog', 'urlInput', 'newTab',
         'sourceDialog', 'sourceInput',
         'iframeDialog', 'iframeUrlInput', 'iframeWidthInput', 'iframeHeightInput', 'iframeTitleInput',
@@ -160,11 +166,13 @@ export default class extends Controller {
 
     connect() {
         this.#createEditor();
+        this.#wireField();
         this.element.classList.add('lexical--ready');
     }
 
     disconnect() {
-        this.element.classList.remove('lexical--ready');
+        this.element.classList.remove('lexical--ready', 'lexical--empty', 'lexical--invalid');
+        this.#unwireField();
         if (this.teardown) {
             this.teardown();
             this.teardown = null;
@@ -177,6 +185,31 @@ export default class extends Controller {
             this.editor = null;
         }
     }
+
+    // --- Form field semantics ----------------------------------------------
+
+    // The browser found the textarea invalid (`required` and empty) while validating the
+    // form. Its own message needs a focusable control to hang from, and the textarea is
+    // display:none once the editor is up, so without this the submission just stops, with
+    // nothing on screen and "An invalid form control is not focusable" in the console. Show
+    // the browser's message (already in the page's language) by the editor instead, and take
+    // the focus when this is the first invalid control of the form, as the browser would.
+    onInvalid = (event) => {
+        event.preventDefault();
+        const input = this.inputTarget;
+        this.#setInvalid(input.validationMessage);
+        const form = input.form;
+        const firstInvalid = form ? form.querySelector('input:invalid, select:invalid, textarea:invalid') : input;
+        if (firstInvalid === input) {
+            this.editor.focus();
+        }
+    };
+
+    // A label click focuses its control; ours is hidden, so send the focus to the editor.
+    onLabelClick = (event) => {
+        event.preventDefault();
+        this.editor.focus();
+    };
 
     // --- Toolbar actions (bound in the form theme via data-action) ---------
 
@@ -526,6 +559,7 @@ export default class extends Controller {
             editor.registerUpdateListener(({ editorState }) => {
                 this.#syncOut(editorState);
                 this.#refreshToolbar(editorState);
+                this.#refreshEmpty(editorState);
             }),
         );
 
@@ -597,18 +631,89 @@ export default class extends Controller {
             return;
         }
         this.inputTarget.value = value;
+        this.#clearInvalid();
         this.inputTarget.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // The document as the HTML the field stores.
     #readHtml(editorState) {
-        return editorState.read(() => {
-            // Embeds carry no text, so a document holding nothing but one is empty by the
-            // text-content measure — and would be saved as an empty string.
-            const isEmpty = '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
+        return editorState.read(() => (this.#isEmpty() ? '' : $generateHtmlFromNodes(this.editor, null)));
+    }
 
-            return isEmpty ? '' : $generateHtmlFromNodes(this.editor, null);
+    // Whether the document holds nothing worth saving. Embeds carry no text, so a document
+    // holding nothing but one is empty by the text-content measure alone — and would be
+    // saved as an empty string. Must run inside a read()/update() scope.
+    #isEmpty() {
+        return '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
+    }
+
+    // The placeholder (the textarea's, mirrored onto the editable by #wireField) shows while
+    // the document is empty; the stylesheet keys it off this class.
+    #refreshEmpty(editorState) {
+        this.element.classList.toggle('lexical--empty', editorState.read(() => this.#isEmpty()));
+    }
+
+    // --- Form field semantics ----------------------------------------------
+
+    // Mirror the textarea's form semantics onto the editable surface, which is what the user
+    // — and their assistive technology — actually works with: once the editor is up the
+    // textarea is display:none, so by itself the surface has no accessible name, no
+    // `required` state and no placeholder, and a click on the field's label goes nowhere.
+    #wireField() {
+        const input = this.inputTarget;
+        const editable = this.editableTarget;
+        editable.setAttribute('aria-required', String(input.required));
+        editable.setAttribute('aria-invalid', 'false');
+        const placeholder = input.getAttribute('placeholder');
+        if (placeholder) {
+            editable.dataset.placeholder = placeholder;
+        }
+        ['aria-label', 'aria-describedby'].forEach((name) => {
+            if (input.hasAttribute(name)) {
+                editable.setAttribute(name, input.getAttribute(name));
+            }
         });
+        this.label = input.labels?.[0] ?? null;
+        if (this.label) {
+            if (!this.label.id) {
+                this.label.id = `${input.id || 'lexical'}_label`;
+            }
+            editable.setAttribute('aria-labelledby', this.label.id);
+            this.label.addEventListener('click', this.onLabelClick);
+        }
+        input.addEventListener('invalid', this.onInvalid);
+    }
+
+    #unwireField() {
+        this.inputTarget.removeEventListener('invalid', this.onInvalid);
+        if (this.label) {
+            this.label.removeEventListener('click', this.onLabelClick);
+            this.label = null;
+        }
+    }
+
+    #setInvalid(message) {
+        this.element.classList.add('lexical--invalid');
+        this.editableTarget.setAttribute('aria-invalid', 'true');
+        if (this.hasErrorTarget) {
+            this.errorTarget.textContent = message;
+            this.errorTarget.hidden = false;
+        }
+    }
+
+    // Every change to the value clears the message: the browser re-validates on the next
+    // submission anyway, and a message about the field being empty must not outlive the
+    // first keystroke.
+    #clearInvalid() {
+        if (!this.element.classList.contains('lexical--invalid')) {
+            return;
+        }
+        this.element.classList.remove('lexical--invalid');
+        this.editableTarget.setAttribute('aria-invalid', 'false');
+        if (this.hasErrorTarget) {
+            this.errorTarget.hidden = true;
+            this.errorTarget.textContent = '';
+        }
     }
 
     // --- Toolbar operations ------------------------------------------------
@@ -912,6 +1017,11 @@ export default class extends Controller {
                 button.disabled = state.collapsed;
             }
             button.classList.toggle('is-active', active);
+            // Toggles expose their state to assistive technology too; one-shot buttons
+            // (undo, indent, paste, ...) are not toggles and get no aria-pressed.
+            if (TOGGLE_COMMANDS.has(command)) {
+                button.setAttribute('aria-pressed', String(active));
+            }
         });
 
         this.#refreshEmbedSelection(state.iframeKeys);

@@ -21,12 +21,47 @@
 
 .lexical__editable {
     display: none;
+    position: relative;
     min-height: var(--lexical-min-height, 200px);
     padding: 8px 12px;
     outline: none;
     overflow-y: auto;
     color: #333;
     line-height: 1.5;
+}
+
+/* The textarea's placeholder, mirrored onto the editable surface by the controller and shown
+   while the document is empty (`lexical--empty`). A pseudo-element, so Lexical's reconciler
+   never sees it. */
+.lexical--empty .lexical__editable[data-placeholder]::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    left: 12px;
+    color: #999;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* The browser's own validation message for an empty required field, which it cannot show by
+   the hidden textarea itself; the controller fills and reveals it on the `invalid` event. */
+.lexical__error {
+    display: block;
+    margin: 0;
+    padding: 6px 12px;
+    border-top: 1px solid #d2d6de;
+    background: #fdf7f7;
+    color: #a94442;
+    font-size: 13px;
+}
+
+.lexical__error[hidden] {
+    display: none;
+}
+
+.lexical--invalid {
+    border-color: #a94442;
 }
 
 .lexical--ready .lexical__toolbar {
