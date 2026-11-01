@@ -25,17 +25,30 @@ required — everything runs through AssetMapper's importmap.
 
 Make sure [Composer is installed](https://getcomposer.org/doc/00-intro.md) globally.
 
+### With Symfony Flex
+
+```console
+composer require flexible-ux/lexical-bundle
+```
+
+That is the whole installation. Flex registers the bundle in `config/bundles.php`, adds the Lexical
+packages to your `importmap.php` (from the bundle's `assets/package.json`) and enables the `lexical`
+Stimulus controller in `assets/controllers.json`. The bundle's recipe, kept in [`recipe/`](recipe/)
+and submitted to [symfony/recipes-contrib](https://github.com/symfony/recipes-contrib), additionally
+creates `config/packages/flexible_ux_lexical.yaml` with every application-wide default commented out;
+until it is merged, Flex falls back to its auto-generated recipe, which registers the bundle but does
+not create that file - add it yourself when you want to change a default (see
+[Application-wide defaults](#application-wide-defaults)).
+
+### Without Flex
+
 #### Step 1: Download the bundle
 
 ```console
 composer require flexible-ux/lexical-bundle
 ```
 
-With **Symfony Flex**, `composer require` already wires the front-end for you: the Lexical packages are
-added to your `importmap.php` (from the bundle's `assets/package.json`) and the Stimulus controller is
-enabled in your `assets/controllers.json`. Skip to step 3.
-
-#### Step 2 (without Flex): wire the front-end manually
+#### Step 2: Wire the front-end
 
 Add the Lexical packages to your importmap at the constraint the bundle declares in its
 `assets/package.json` — every `lexical` / `@lexical/*` package has to be the same version, so require
@@ -66,8 +79,7 @@ Then enable the Stimulus controller in `assets/controllers.json`:
 
 #### Step 3: Enable the bundle
 
-The bundle does not ship a Flex recipe yet, so register it in `config/bundles.php` (Flex and non-Flex
-alike):
+Register it in `config/bundles.php`:
 
 ```php
 // config/bundles.php

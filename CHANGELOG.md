@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A Symfony Flex recipe, kept in `recipe/` in the layout symfony/recipes-contrib expects under
+  `flexible-ux/lexical-bundle/1.0/`: `manifest.json` registers the bundle for all environments and
+  declares the `lexical` / `lexical-bundle` aliases, `config/packages/flexible_ux_lexical.yaml` is
+  copied into the application with every application-wide default commented out, and
+  `post-install.txt` tells `composer require` what to print. Verified against Flex 2.11 through a
+  local recipe endpoint: the bundle lands in `config/bundles.php`, the configuration file is
+  created and `symfony.lock` records the recipe. The directory is `export-ignore`d, so it never
+  reaches a consuming application. `recipe/README.md` explains how to submit it and how to keep
+  the two copies in sync.
+
 ### Changed
 
+- The installation instructions (README and `docs/index.md`) no longer tell Flex users to register
+  the bundle in `config/bundles.php` by hand. Flex has always done that on its own for packages of
+  type `symfony-bundle` - it synthesises an "auto-generated recipe" from the PSR-4 namespace and
+  the bundle class, as a `composer require` against an endpoint without the recipe confirmed - so
+  with Flex the whole installation is `composer require flexible-ux/lexical-bundle`; the manual
+  steps are now documented for applications without Flex only.
 - The Lexical packages in the bundle's importmap (`assets/package.json`) are bumped from `^0.52.0`
   to `^0.53.0`, and the documented `importmap:require` command (README and `docs/index.md`) now
   carries `^0.53.0`. None of the four

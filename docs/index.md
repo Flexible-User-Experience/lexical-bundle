@@ -24,8 +24,11 @@ See the [README](../README.md) for the full steps. In short:
 composer require flexible-ux/lexical-bundle
 ```
 
-With Symfony Flex this also adds the Lexical packages to `importmap.php` and enables the `lexical`
-controller in `assets/controllers.json`. Without Flex, do both manually:
+With Symfony Flex this is all: the bundle is registered in `config/bundles.php`, the Lexical packages
+are added to `importmap.php` and the `lexical` controller is enabled in `assets/controllers.json`.
+The recipe kept in [`recipe/`](../recipe/) (submitted to symfony/recipes-contrib) also drops a
+commented `config/packages/flexible_ux_lexical.yaml` in place; until it is merged Flex's auto-generated
+recipe registers the bundle and nothing else. Without Flex, do the three steps manually:
 
 ```console
 php bin/console importmap:require lexical@^0.53.0 @lexical/extension@^0.53.0 @lexical/rich-text@^0.53.0 @lexical/html@^0.53.0 @lexical/clipboard@^0.53.0 @lexical/list@^0.53.0 @lexical/link@^0.53.0 @lexical/history@^0.53.0 @lexical/utils@^0.53.0
@@ -41,9 +44,8 @@ php bin/console importmap:require lexical@^0.53.0 @lexical/extension@^0.53.0 @le
 }
 ```
 
-Then register the bundle in `config/bundles.php` (no Flex recipe is shipped yet):
-
 ```php
+// config/bundles.php
 FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle::class => ['all' => true],
 ```
 
