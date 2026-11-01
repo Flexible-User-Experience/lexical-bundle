@@ -380,6 +380,26 @@ The bundle is deliberately split into four layers so each can be understood and 
 
 See [`docs/index.md`](docs/index.md) for customisation, theming and translation details.
 
+## Development
+
+```console
+composer install
+vendor/bin/phpunit                        # unit and integration tests
+vendor/bin/bdi detect drivers             # once: a chromedriver matching your Chrome, into drivers/
+php tests/Browser/Harness/build.php       # once per Lexical constraint: the harness importmap (needs network)
+vendor/bin/phpunit --testsuite browser    # the editor in a headless Chrome, through Symfony Panther
+```
+
+The browser suite drives the editor in Chrome through [Symfony Panther](https://github.com/symfony/panther)
+against the harness application in `tests/Browser/Harness`, a consumer of the bundle wired the way
+`composer require` wires one (AssetMapper, importmap, StimulusBundle's loader, UX Icons). It covers
+what PHPUnit alone cannot: mounting, the untouched stored value, the semantic export and its round
+trip, required and placeholder, the label, presets, the link modal and relative links, the Office
+paste clean-up, the clipboard, the extension events and the rendering filter. CI runs it on every
+push, and a weekly workflow fails when a Lexical release the bundle's constraint does not cover is
+out - the cue to read its release notes and bump (`php tests/Browser/Harness/build.php '^0.54.0'`
+rebuilds the harness against another constraint to try one).
+
 ## License
 
 Released under the [MIT License](LICENSE). Bundled icons are from

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Browser tests. `vendor/bin/phpunit --testsuite browser` drives the editor in a headless Chrome
+  through Symfony Panther (new dev requirements `symfony/panther` and `dbrekelmans/bdi`) against
+  `tests/Browser/Harness`, a kernel that consumes the bundle the way an application does:
+  AssetMapper serving the working tree, `build.php` doing the `importmap:require` of the Lexical
+  packages at the constraint of `assets/package.json`, StimulusBundle's loader, UX Icons, and a
+  fixture page whose field options come from the query string. The suite covers mounting, the
+  untouched stored value, the allowlists on load, the semantic export and its round trip, the
+  lean default and the presets, undo, the extension events, required and placeholder, the label,
+  sanitize-on-submit end to end, the rendering filter and stylesheet, the link modal and relative
+  links, the automatic Office clean-up and the clipboard round trip of an embed - what until now
+  was verified by hand, in a scratch harness, at every Lexical bump. `vendor/bin/phpunit` alone
+  still runs only the unit and integration suite (`defaultTestSuite="default"`).
+- CI runs the browser suite in its own job on every push and pull request, uploading Panther's
+  screenshots on failure, and a weekly `lexical-version-check` workflow fails when a Lexical
+  release the constraint in `assets/package.json` does not cover is out - the cue to read its
+  release notes and bump.
 - Extension points in the Symfony UX style. The controller dispatches `lexical:pre-connect`
   (`detail.config`, the extension config the editor is built from: push nodes and Lexical
   extensions, add theme classes, swap an HTML export), `lexical:connect` (`detail.editor`, once

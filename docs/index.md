@@ -15,6 +15,7 @@ Stimulus and UX Icons, and it stores plain HTML.
   - [Translations](#translations)
 - [Rendering stored content](#rendering-stored-content)
 - [Security notes](#security-notes)
+- [Testing the bundle](#testing-the-bundle)
 - [Troubleshooting](#troubleshooting)
 
 ## Installation & setup
@@ -432,6 +433,21 @@ and may hold markup from elsewhere that the editor would strip; an untouched fie
   with the editor's own allowlist; with `|raw` you are trusting whatever reached the field. On the
   way in, the `sanitize` option (default on) applies the same allowlist to every changed submission,
   so a client bypassing the editor cannot store what the editor would not have produced.
+
+## Testing the bundle
+
+`vendor/bin/phpunit` runs the unit and integration tests (the `default` suite: the form type, the
+bundle configuration, the sanitizer, the Twig filters and the rendered form theme). The `browser`
+suite (`vendor/bin/phpunit --testsuite browser`) drives the editor in a headless Chrome through
+Symfony Panther, against `tests/Browser/Harness`: a kernel that consumes the bundle like an
+application does, with AssetMapper serving the bundle's working tree, `build.php` doing the
+`importmap:require` of the Lexical packages at the constraint of `assets/package.json`, and a
+fixture page whose field options come from the query string (`?preset=full`, `?value=`,
+`?placeholder=...`, `?allow_relative_links=0`, ...). See `tests/Browser/README.md` for the setup
+(a chromedriver from `vendor/bin/bdi detect drivers`) and `.github/workflows/ci.yaml` for how CI
+runs both suites. A Lexical bump is verified by rebuilding the harness at the new constraint and
+running the browser suite; `.github/workflows/lexical-version-check.yaml` fails weekly when a
+release outside the constraint is out.
 
 ## Troubleshooting
 
