@@ -91,6 +91,7 @@ final class BundleIntegrationTest extends KernelTestCase
         );
 
         self::assertContains('@flexible-ux/lexical-bundle/src/iframe-node.js', $imported);
+        self::assertContains('@flexible-ux/lexical-bundle/src/html-export.js', $imported);
         self::assertContains('@flexible-ux/lexical-bundle/styles/lexical.css', $imported);
     }
 

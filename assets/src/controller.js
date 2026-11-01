@@ -60,8 +60,10 @@ import {
 // so the path is rewritten to the digested one. Bare imports are unaffected: they resolve
 // through the importmap by name, whatever their clause looks like.
 import * as iframeNodeModule from './iframe-node.js';
+import * as htmlExportModule from './html-export.js';
 
 const { IframeNode, $createIframeNode, $isIframeNode } = iframeNodeModule;
+const { createHtmlExport } = htmlExportModule;
 
 // Lexical node → CSS class map. The classes themselves live in
 // ../styles/lexical.css, keeping this file behaviour-only.
@@ -455,6 +457,9 @@ export default class extends Controller {
                 editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
                 nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
                 theme: THEME,
+                // The field stores semantic HTML without the editor's theme classes and
+                // spans; see html-export.js. Import stays Lexical's own.
+                html: { export: createHtmlExport() },
                 onError: (error) => console.error('[lexical]', error),
                 dependencies: [configExtension(HistoryExtension, { delay: 300 })],
             }),
