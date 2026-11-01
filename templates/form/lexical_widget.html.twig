@@ -40,7 +40,7 @@
         source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
     {%- set lexical_sep = lexical_separator|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::SEPARATOR')) -%}
-    <div class="lexical"
+    <div class="lexical" data-preset="{{ lexical_preset|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_PRESET')) }}"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
              invalidEmbedUrlMessage: 'error.invalid_embed_url'|trans({}, 'FlexibleUxLexical'),

@@ -13,16 +13,15 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
  * tag maps the type by its class, so `->add('body', LexicalFormType::class)` resolves
  * to this definition.
  *
- * The three arguments are the application-wide defaults coming from
- * `config/packages/flexible_ux_lexical.yaml`; per-field options still override them.
+ * The argument is the presets from `config/packages/flexible_ux_lexical.yaml` (the
+ * top-level options as the `default` preset plus the named ones); per-field options
+ * still override whatever preset a field uses.
  */
 return static function (ContainerConfigurator $container): void {
     $container->services()
         ->set('flexible_ux_lexical.form.type.lexical', LexicalFormType::class)
             ->args([
-                param('flexible_ux_lexical.toolbar'),
-                param('flexible_ux_lexical.height'),
-                param('flexible_ux_lexical.allowed_link_schemes'),
+                param('flexible_ux_lexical.presets'),
             ])
             ->tag('form.type');
 };

@@ -9,6 +9,7 @@ use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use FlexibleUx\LexicalBundle\Tests\Fixtures\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\AssetMapper\ImportMap\JavaScriptImport;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\FormFactoryInterface;
 use Twig\Environment;
 
@@ -154,7 +155,7 @@ final class BundleIntegrationTest extends KernelTestCase
         self::assertMatchesRegularExpression('/<textarea[^>]* placeholder="Write something\.\.\."[^>]*>/', $html);
     }
 
-    public function testDefaultToolbarRendersEveryButton(): void
+    public function testDefaultToolbarRendersItsButtons(): void
     {
         self::bootKernel();
         $container = self::getContainer();
@@ -162,18 +163,94 @@ final class BundleIntegrationTest extends KernelTestCase
         $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
         $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
 
-        // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
-        // when an icon is missing (ignore_not_found defaults to false).
         foreach (LexicalFormType::DEFAULT_TOOLBAR as $entry) {
             if (LexicalFormType::SEPARATOR === $entry) {
                 continue;
             }
             self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
         }
+        // Nothing the lean default leaves out sneaks in.
+        foreach (['cut', 'copy', 'paste', 'paste-word', 'subscript', 'superscript', 'source'] as $entry) {
+            self::assertStringNotContainsString(\sprintf('data-command="%s"', $entry), $html);
+        }
+        self::assertStringNotContainsString('data-command="align-', $html);
 
-        // The default groups the buttons with seven separators
+        // The default groups its buttons with five separators
+        // (history · text · list · indent · link · embed).
+        self::assertSame(5, substr_count($html, 'lexical__sep'));
+        self::assertStringContainsString('class="lexical" data-preset="default"', $html);
+    }
+
+    public function testFullPresetRendersEveryButton(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
+        // when an icon is missing (ignore_not_found defaults to false).
+        foreach (LexicalFormType::AVAILABLE_BUTTONS as $entry) {
+            self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
+        }
+
+        // Eight groups, seven separators
         // (history · clipboard · text · align · list · indent · link · embed + source).
         self::assertSame(7, substr_count($html, 'lexical__sep'));
+        self::assertStringContainsString('class="lexical" data-preset="full"', $html);
+    }
+
+    public function testConfiguredPresetsReachTheFormType(): void
+    {
+        // Stands in for a config/packages/flexible_ux_lexical.yaml declaring named presets.
+        $kernel = new TestKernel('test', false, [
+            'height' => '300px',
+            'presets' => [
+                'compact' => ['toolbar' => ['bold', '|', 'link'], 'height' => '120px'],
+                'strict' => ['allowed_link_schemes' => ['https']],
+            ],
+        ]);
+        $kernel->boot();
+        $factory = $kernel->getContainer()->get('test.form.factory');
+
+        $compact = $factory->create(LexicalFormType::class, null, ['preset' => 'compact'])->createView();
+        self::assertSame(['bold', '|', 'link'], $compact->vars['lexical_toolbar']);
+        self::assertSame('120px', $compact->vars['lexical_height']);
+        self::assertSame(['http', 'https', 'mailto', 'tel'], $compact->vars['lexical_allowed_link_schemes']);
+
+        // A preset only overrides what it sets; the rest comes from the application defaults.
+        $strict = $factory->create(LexicalFormType::class, null, ['preset' => 'strict'])->createView();
+        self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $strict->vars['lexical_toolbar']);
+        self::assertSame('300px', $strict->vars['lexical_height']);
+        self::assertSame(['https'], $strict->vars['lexical_allowed_link_schemes']);
+
+        // The built-in full preset inherits the application defaults too.
+        $full = $factory->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+        self::assertSame(LexicalFormType::FULL_TOOLBAR, $full->vars['lexical_toolbar']);
+        self::assertSame('300px', $full->vars['lexical_height']);
+
+        $kernel->shutdown();
+    }
+
+    public function testDefaultPresetIsConfiguredAtTheTopLevelOnly(): void
+    {
+        $kernel = new TestKernel('test', false, ['presets' => ['default' => ['height' => '1px']]]);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessageMatches('/"default" preset is configured through the top-level/');
+
+        $kernel->boot();
+    }
+
+    public function testUnknownToolbarEntryInAPresetFailsAtBoot(): void
+    {
+        $kernel = new TestKernel('test', false, ['presets' => ['compact' => ['toolbar' => ['bold', 'blink']]]]);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessageMatches('/"compact" preset: Unknown toolbar entry "blink"/');
+
+        $kernel->boot();
     }
 
     public function testAlignmentButtonsAreOptional(): void
