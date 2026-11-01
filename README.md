@@ -42,12 +42,12 @@ Add the Lexical packages to your importmap at the constraint the bundle declares
 them together:
 
 ```console
-php bin/console importmap:require lexical@^0.52.0 @lexical/extension@^0.52.0 @lexical/rich-text@^0.52.0 @lexical/html@^0.52.0 @lexical/clipboard@^0.52.0 @lexical/list@^0.52.0 @lexical/link@^0.52.0 @lexical/history@^0.52.0 @lexical/utils@^0.52.0
+php bin/console importmap:require lexical@^0.53.0 @lexical/extension@^0.53.0 @lexical/rich-text@^0.53.0 @lexical/html@^0.53.0 @lexical/clipboard@^0.53.0 @lexical/list@^0.53.0 @lexical/link@^0.53.0 @lexical/history@^0.53.0 @lexical/utils@^0.53.0
 ```
 
 Those are the nine packages the controller imports. AssetMapper follows their own imports and adds
 what they pull in — the `@lexical/extension/*` modules, `@lexical/selection`, `@lexical/a11y`,
-`@lexical/dragon` and `@preact/signals-core` — so `importmap.php` ends up with 42 entries for the
+`@lexical/dragon` and `@preact/signals-core` — so `importmap.php` ends up with 44 entries for the
 nine you named. Re-running the same command (with the constraint of the bundle version you are on)
 is also how you follow a later Lexical bump of the bundle without Flex: it re-pins the nine packages
 and refreshes everything they pull in.
