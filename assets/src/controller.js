@@ -36,7 +36,7 @@ import {
 } from '@lexical/extension';
 import { registerRichText, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $insertDataTransferForRichText } from '@lexical/clipboard';
+import { $insertDataTransferForRichText, ClipboardImportExtension } from '@lexical/clipboard';
 import {
     ListNode,
     ListItemNode,
@@ -465,7 +465,20 @@ export default class extends Controller {
                 // spans; see html-export.js. Import stays Lexical's own.
                 html: { export: createHtmlExport() },
                 onError: (error) => console.error('[lexical]', error),
-                dependencies: [configExtension(HistoryExtension, { delay: 300 })],
+                dependencies: [
+                    configExtension(HistoryExtension, { delay: 300 }),
+                    // Every HTML paste and drop passes through this middleware before Lexical
+                    // imports it, whatever handler triggered the import (Ctrl+V, the toolbar
+                    // buttons, a drop): markup from Word, Outlook or Google Docs is cleaned on
+                    // its way in, so pasting from Word just works and the paste-word button is
+                    // only a way to force the cleaning. `$next(html)` hands the (possibly
+                    // rewritten) HTML to Lexical's own import with the same selection.
+                    configExtension(ClipboardImportExtension, {
+                        $importMimeType: {
+                            'text/html': [(html, selection, $next) => $next(this.#preparePastedHtml(html))],
+                        },
+                    }),
+                ],
             }),
         );
         this.editor = editor;
@@ -841,10 +854,11 @@ export default class extends Controller {
         });
     }
 
-    // Paste the system clipboard at the caret; `fromWord` scrubs Word's markup first.
-    // Either way the content goes through Lexical's model like any paste (markup the
-    // model cannot represent is dropped) and, like every path into the document, links
-    // whose scheme is not allowed are unwrapped by the LinkNode transform.
+    // Paste the system clipboard at the caret; `fromWord` forces the Office clean-up that
+    // otherwise only runs when the markup looks like Office's. Either way the content goes
+    // through the clipboard middleware and Lexical's model like any paste (markup the model
+    // cannot represent is dropped) and, like every path into the document, links whose
+    // scheme is not allowed are unwrapped by the LinkNode transform.
     async #paste(fromWord) {
         const dataTransfer = await this.#readClipboard();
         if (null === dataTransfer) {
@@ -852,21 +866,38 @@ export default class extends Controller {
 
             return;
         }
-        if (fromWord) {
-            const html = dataTransfer.getData('text/html');
-            if ('' !== html) {
-                dataTransfer.setData('text/html', this.#cleanWordHtml(html));
-            }
-        }
         // The permission prompt some browsers show for clipboard.read() may have taken
         // the focus (and with it the selection) away; restore it before inserting.
         this.editor.focus();
-        this.editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                $insertDataTransferForRichText(dataTransfer, selection, this.editor);
-            }
-        });
+        this.cleanNextPaste = fromWord;
+        try {
+            this.editor.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                    $insertDataTransferForRichText(dataTransfer, selection, this.editor);
+                }
+            });
+        } finally {
+            // A clipboard without HTML never reaches the middleware; the flag must not
+            // outlive this paste and clean the next one.
+            this.cleanNextPaste = false;
+        }
+    }
+
+    // What the clipboard middleware hands to Lexical: the pasted HTML as it is, or scrubbed
+    // of Office's markup when it carries Office's fingerprints (or the paste-word button
+    // asked for it).
+    #preparePastedHtml(html) {
+        const clean = this.cleanNextPaste || this.#isOfficeHtml(html);
+        this.cleanNextPaste = false;
+
+        return clean ? this.#cleanWordHtml(html) : html;
+    }
+
+    // Word, Outlook and the other Office apps sign their HTML: an Office XML namespace, the
+    // `mso-` style prefix, `Mso` classes or `<o:p>` paragraph marks.
+    #isOfficeHtml(html) {
+        return /urn:schemas-microsoft-com:office|\bmso-|class="?Mso|<o:p>/i.test(html);
     }
 
     // Read the system clipboard into a DataTransfer carrying the html and plain-text
@@ -927,20 +958,28 @@ export default class extends Controller {
     }
 
     // Word encodes a list item as a paragraph whose style carries `mso-list` metadata
-    // and whose visible marker ("·", "1.", …) sits in a span styled `mso-list:Ignore`.
-    // Without this, a pasted list imports as paragraphs with a literal bullet glyph in
-    // front. Each consecutive run of such paragraphs belonging to the same list — Word
-    // names the instance with the style's `lfoN` token, so two adjacent but distinct
-    // lists stay distinct — becomes one flat <ul>/<ol> (ordered when its first marker
-    // looks like "1." / "a)"), and the markers go away with the paragraphs. Nesting
-    // levels are not reconstructed.
+    // (`mso-list: l0 level2 lfo1`: the list definition, the nesting level, the list
+    // instance) and whose visible marker ("·", "1.", …) sits in a span styled
+    // `mso-list:Ignore`. Without this, a pasted list imports as paragraphs with a literal
+    // bullet glyph in front. Each consecutive run of such paragraphs belonging to the same
+    // list — Word names the instance with the `lfoN` token, so two adjacent but distinct
+    // lists stay distinct — becomes nested <ul>/<ol> elements following the declared
+    // levels (a level-2 item goes into a list inside the level-1 item before it), ordered
+    // where the first marker of that level looks like "1." / "a)", and the markers go away
+    // with the paragraphs.
     #convertWordLists(doc) {
         const isItem = (node) => null !== node && 'p' === node.localName
             && (/mso-list/i.test(node.getAttribute('style') || '') || node.className.includes('MsoListParagraph'));
         const listIdOf = (paragraph) => ((paragraph.getAttribute('style') || '').match(/lfo\d+/i) ?? ['?'])[0];
+        const levelOf = (paragraph) => Math.max(1, parseInt(((paragraph.getAttribute('style') || '').match(/level(\d+)/i) ?? [0, '1'])[1], 10) || 1);
         const markerOf = (paragraph) => [...paragraph.querySelectorAll('span')].find(
             (span) => /mso-list\s*:\s*ignore/i.test(span.getAttribute('style') || ''),
         ) ?? null;
+        const isOrdered = (paragraph) => {
+            const marker = markerOf(paragraph);
+
+            return null !== marker && /^[0-9a-z]{1,4}[.)]/i.test(marker.textContent.trim());
+        };
 
         [...doc.body.querySelectorAll('p')].forEach((paragraph) => {
             // Only the first paragraph of a run builds the list; the ones it pulls in
@@ -953,16 +992,25 @@ export default class extends Controller {
             if (null !== previous && isItem(previous) && listIdOf(previous) === id) {
                 return;
             }
-            const marker = markerOf(paragraph);
-            const ordered = null !== marker && /^[0-9a-z]{1,4}[.)]/i.test(marker.textContent.trim());
-            const list = doc.createElement(ordered ? 'ol' : 'ul');
-            paragraph.before(list);
+            // lists[n - 1] is the open list at nesting level n.
+            const lists = [doc.createElement(isOrdered(paragraph) ? 'ol' : 'ul')];
+            paragraph.before(lists[0]);
             for (let item = paragraph; isItem(item) && listIdOf(item) === id; ) {
                 const next = item.nextElementSibling;
+                const level = levelOf(item);
+                // Back up to this item's level, then open whatever deeper lists it needs,
+                // each inside the last item of the level above (an empty item when Word
+                // skipped a level).
+                lists.length = Math.min(lists.length, level);
+                while (lists.length < level) {
+                    const parent = lists[lists.length - 1];
+                    const parentItem = parent.lastElementChild ?? parent.appendChild(doc.createElement('li'));
+                    lists.push(parentItem.appendChild(doc.createElement(isOrdered(item) ? 'ol' : 'ul')));
+                }
                 markerOf(item)?.remove();
                 const entry = doc.createElement('li');
                 entry.append(...item.childNodes);
-                list.append(entry);
+                lists[level - 1].append(entry);
                 item.remove();
                 item = next;
             }
