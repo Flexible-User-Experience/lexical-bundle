@@ -1,0 +1,5 @@
+# Written by build.php (the importmap seeded with app.js and the StimulusBundle loader, then the
+# Lexical packages) and by the running harness; nothing here is meant to be edited by hand.
+/importmap.php
+/assets/vendor/
+/var/

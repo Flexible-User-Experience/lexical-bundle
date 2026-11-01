@@ -38,8 +38,10 @@
         "symfony/ux-icons": "^2.20 || ^3.0"
     },
     "require-dev": {
+        "dbrekelmans/bdi": "^1.4",
         "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
-        "symfony/framework-bundle": "^7.4 || ^8.0"
+        "symfony/framework-bundle": "^7.4 || ^8.0",
+        "symfony/panther": "^2.4"
     },
     "autoload": {
         "psr-4": {

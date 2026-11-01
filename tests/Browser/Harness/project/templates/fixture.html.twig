@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lexical-bundle browser harness</title>
+{{ importmap('app') }}
+<style>
+    body { font-family: system-ui, sans-serif; margin: 16px; max-width: 960px; }
+    h2 { font-size: 14px; margin: 24px 0 8px; }
+</style>
+</head>
+<body>
+<h1 style="font-size: 18px">lexical-bundle browser harness</h1>
+{% if submitted is not null %}
+    <pre id="submitted">{{ submitted }}</pre>
+{% endif %}
+{{ form_start(form, {attr: {id: 'harness-form'}}) }}
+{{ form_row(form.body) }}
+<button type="submit" id="harness-submit">Submit</button>
+{{ form_end(form) }}
+<h2>rendered with lexical_content</h2>
+<div id="rendered">{{ value|lexical_content }}</div>
+</body>
+</html>
