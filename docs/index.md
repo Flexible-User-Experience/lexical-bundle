@@ -295,9 +295,56 @@ The toolbar uses `ux_icon('lexical:<name>')`, resolved from the icon set the bun
 
 ### The styles
 
-All chrome is class-based (`.lexical`, `.lexical__toolbar`, `.lexical__btn`, `.lexical__dialog`, …) and
-the editable height is driven by the `--lexical-min-height` CSS custom property. Override those rules in
-your own stylesheet — the bundle's CSS is plain, unscoped and low-specificity on purpose.
+All chrome is class-based (`.lexical`, `.lexical__toolbar`, `.lexical__btn`, `.lexical__dialog`, …),
+the editable height is driven by the `--lexical-min-height` custom property the form theme sets per
+field, and every colour, radius and font is a `--lexical-*` custom property declared with its default
+on `:root`:
+
+| Variable | Default | Used for |
+|----------|---------|----------|
+| `--lexical-border-color` | `#d2d6de` | borders, separators, the embed preview outline |
+| `--lexical-bg` | `#fff` | editor and dialog background |
+| `--lexical-color` | `#333` | text and button colour |
+| `--lexical-muted-color` | `#999` | the placeholder |
+| `--lexical-toolbar-bg` | `#f7f7f7` | toolbar, dialog buttons, embed preview |
+| `--lexical-button-hover-bg` | `#e7e7e7` | hovered buttons |
+| `--lexical-accent` / `--lexical-accent-dark` / `--lexical-accent-contrast` | `#3c8dbc` / `#367fa9` / `#fff` | active buttons, focus borders, the selected embed, primary dialog button |
+| `--lexical-error-color` / `--lexical-error-bg` | `#a94442` / `#fdf7f7` | the validation message and the invalid border |
+| `--lexical-radius` | `3px` | button corners |
+| `--lexical-dialog-shadow` / `--lexical-backdrop` | shadow / `rgba(0,0,0,.4)` | the modals |
+| `--lexical-font-mono` | `ui-monospace, ...` | the source modal and inline code |
+| `--lexical-content-spacing` | `8px` | block spacing of the content |
+| `--lexical-link-color` | `#3c8dbc` | links in the content |
+| `--lexical-quote-border-color` / `--lexical-quote-color` | `#d2d6de` / `#555` | blockquotes |
+| `--lexical-code-bg` / `--lexical-mark-bg` | `#f4f4f4` / `#fff3a8` | inline code and highlights |
+
+Redefine them on `:root`, on an ancestor of the field or inside a `prefers-color-scheme: dark` media
+query (the bundle ships no dark theme of its own); the content variables apply to the editor's
+surface and to `.lexical-content` on the page alike. The rules themselves keep class specificity on
+purpose: a global reset (`ul { list-style: none }`) never wins over them, while an application rule of
+the same shape (`.lexical-content ul`) loaded later does.
+
+### Extending the editor from your own code
+
+The controller dispatches three events on the field's wrapper, bubbling, named the way Symfony UX
+controllers name their extension points:
+
+- `lexical:pre-connect` with `detail.config`, the object handed to Lexical's `defineExtension()` for
+  this editor: `nodes` (push your own `LexicalNode` classes), `dependencies` (push Lexical
+  extensions, built with `defineExtension` / `configExtension`), `theme` (a copy of the bundle's,
+  add classes), `html.export` (a `Map` of export overrides), `editable`, `onError`. Whatever the
+  listener changes is what the editor is built from.
+- `lexical:connect` with `detail.editor` once the editor holds the stored document: register
+  commands, node transforms, update listeners; keep the disposers.
+- `lexical:disconnect` with `detail.editor` right before it is disposed: call the disposers. Stimulus
+  disconnects a controller after its element left the document (a Turbo visit, a removed row), and
+  an event dispatched on a detached element reaches no `document` listener, so in that case the
+  event is dispatched on `document` instead; every event carries `detail.element`, the wrapper, for
+  listeners that need to tell editors apart.
+
+Listen on `document` in `assets/app.js` for every editor, or from a Stimulus controller of your own
+for one of them (the README has a complete example). The bundle's own features are built with the
+same hooks, which is the point: there is nothing a listener cannot reach that the controller can.
 
 ### Translations
 

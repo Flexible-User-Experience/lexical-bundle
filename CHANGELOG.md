@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Extension points in the Symfony UX style. The controller dispatches `lexical:pre-connect`
+  (`detail.config`, the extension config the editor is built from: push nodes and Lexical
+  extensions, add theme classes, swap an HTML export), `lexical:connect` (`detail.editor`, once
+  the stored document is loaded) and `lexical:disconnect` (`detail.editor`, before disposal) on
+  the field's wrapper, bubbling, so an application controller or a listener on `document` extends
+  an editor without replacing the bundle's controller. Every detail carries `element`, the
+  wrapper; `lexical:disconnect` goes to `document` directly when the wrapper has already left the
+  page, where a bubbling event would reach nobody. The theme handed to a listener is a copy, so a
+  change applies to that editor only.
+- Theming through CSS custom properties. Every colour, radius and font of `lexical.css` and
+  `lexical-content.css` is a `--lexical-*` variable with its default declared on `:root` (border,
+  background, text, muted, toolbar and hover backgrounds, accent and its dark and contrast
+  shades, error colour and background, radius, dialog shadow and backdrop, monospace stack;
+  content spacing, link colour, quote border and colour, code and mark backgrounds). An
+  application restyles the editor and the rendered content at once by redefining them, on
+  `:root`, on an ancestor or inside a `prefers-color-scheme: dark` media query. Rendered output
+  is unchanged with the defaults. Rules keep their class specificity on purpose, so a global
+  reset cannot undo them.
 - Pasting from Word, Outlook or Google Docs just works. Every HTML paste and drop now passes
   through a clipboard import middleware (`@lexical/clipboard`'s `ClipboardImportExtension`, the
   `$next(data)` form Lexical 0.53.0 introduced) before Lexical imports it; markup carrying

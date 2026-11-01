@@ -284,6 +284,84 @@ client without JavaScript, or without the editor's own checks, cannot store what
 not have produced. A field that submits the very string it was rendered with is left alone — that
 string is your data, and may legitimately hold markup migrated from another editor.
 
+## Extending the editor
+
+The controller dispatches the events Symfony UX controllers use as extension points, on the
+field's wrapper and bubbling, so an application controller or a plain listener on `document` can
+hook in without replacing anything:
+
+| Event                  | When                                                | `event.detail`                                   |
+|------------------------|-----------------------------------------------------|--------------------------------------------------|
+| `lexical:pre-connect`  | Before the editor is built                          | `config`: the Lexical extension config (`nodes`, `theme`, `html.export`, `dependencies`, `editable`, ...) — mutate it; `element`: the wrapper |
+| `lexical:connect`      | The editor is up and holds the stored document      | `editor`: the `LexicalEditor`; `element`         |
+| `lexical:disconnect`   | Right before the editor is disposed                 | `editor`, `element` — dispatched on `document` when the wrapper has already left the page |
+
+```js
+// assets/controllers/lexical_extras_controller.js
+import { Controller } from '@hotwired/stimulus';
+import { $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, COMMAND_PRIORITY_LOW } from 'lexical';
+import { HorizontalRuleNode } from '@lexical/extension/HorizontalRuleExtension';
+
+export default class extends Controller {
+    connect() {
+        this.element.addEventListener('lexical:pre-connect', this.onPreConnect);
+        this.element.addEventListener('lexical:connect', this.onConnect);
+    }
+
+    onPreConnect = (event) => {
+        event.detail.config.nodes.push(HorizontalRuleNode);   // a node of your own, or Lexical's
+        event.detail.config.theme.paragraph += ' my-paragraph';
+    };
+
+    onConnect = (event) => {
+        this.unregister = event.detail.editor.registerCommand(FORMAT_TEXT_COMMAND, (format) => {
+            // react to formatting, or return true to swallow it
+            return false;
+        }, COMMAND_PRIORITY_LOW);
+    };
+}
+```
+
+Attach it next to the bundle's controller through the field's `attr` option
+(`'attr' => ['data-controller' => 'lexical-extras']` lands on the textarea, so listen on
+`document` instead, or add the controller to the wrapper in an overridden form theme). The events
+bubble, so `document.addEventListener('lexical:pre-connect', ...)` in `assets/app.js` is the simplest
+place for a change meant for every editor.
+
+## Theming
+
+Every colour, radius and font of the editor and of the rendered content is a CSS custom property
+with a default on `:root`, so a theme is a block of variables, not a set of overrides:
+
+```css
+/* assets/styles/app.css */
+:root {
+    --lexical-accent: #0d6efd;
+    --lexical-accent-dark: #0b5ed7;
+    --lexical-radius: 6px;
+    --lexical-link-color: #0d6efd;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --lexical-bg: #1e1e1e;
+        --lexical-color: #e6e6e6;
+        --lexical-toolbar-bg: #2a2a2a;
+        --lexical-border-color: #444;
+        --lexical-button-hover-bg: #3a3a3a;
+    }
+}
+```
+
+The editor's variables (`--lexical-border-color`, `--lexical-bg`, `--lexical-color`,
+`--lexical-muted-color`, `--lexical-toolbar-bg`, `--lexical-button-hover-bg`, `--lexical-accent`,
+`--lexical-accent-dark`, `--lexical-accent-contrast`, `--lexical-error-color`, `--lexical-error-bg`,
+`--lexical-radius`, `--lexical-dialog-shadow`, `--lexical-backdrop`, `--lexical-font-mono`) are
+declared in `lexical.css`; the content's (`--lexical-content-spacing`, `--lexical-link-color`,
+`--lexical-quote-border-color`, `--lexical-quote-color`, `--lexical-code-bg`, `--lexical-mark-bg`) in
+`lexical-content.css`. Rules keep class specificity, so a global reset never wins over them and
+your own `.lexical-content p` rules do.
+
 ## How it works
 
 The bundle is deliberately split into four layers so each can be understood and overridden on its own:
