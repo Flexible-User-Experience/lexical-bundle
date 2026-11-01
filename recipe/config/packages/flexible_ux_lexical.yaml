@@ -1,0 +1,12 @@
+# Application-wide defaults for FlexibleUx\LexicalBundle\Form\Type\LexicalFormType.
+# Every key mirrors a form option; options passed to an individual field still win.
+# Run `php bin/console config:dump-reference flexible_ux_lexical` for the full reference.
+flexible_ux_lexical:
+    # Ordered toolbar entries; "|" draws a separator. Leave it out to get the bundle's default.
+    # toolbar: ['bold', 'italic', 'underline', 'strikethrough', '|', 'bullet', 'number', '|', 'link', 'unlink']
+
+    # Minimum editable height, as a CSS length.
+    # height: '200px'
+
+    # URL schemes the link modal accepts; anything else (notably javascript: and data:) is rejected.
+    # allowed_link_schemes: ['http', 'https', 'mailto', 'tel']
