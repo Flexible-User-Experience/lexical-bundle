@@ -115,9 +115,26 @@ $builder->add('description', LexicalFormType::class, [
 
 | Option                 | Type       | Default                                    | Description                                             |
 |------------------------|------------|--------------------------------------------|---------------------------------------------------------|
-| `toolbar`              | `string[]` | all 25 buttons in eight `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
-| `height`               | `string`   | `'200px'`                                  | Minimum editable height (any CSS length).               |
-| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']`          | URL schemes the link modal accepts.                     |
+| `preset`               | `string`   | `'default'`                                | The preset the other options default to: `default`, `full` or one configured by the application. |
+| `toolbar`              | `string[]` | the preset's; `default` has 14 buttons in six `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
+| `height`               | `string`   | the preset's; `'200px'`                    | Minimum editable height (any CSS length).               |
+| `allowed_link_schemes` | `string[]` | the preset's; `['http','https','mailto','tel']` | URL schemes the link modal accepts.                |
+
+#### Presets
+
+A preset is a named set of the three options above. Two are built in: `default`, the lean toolbar
+every field gets unless told otherwise (history, text formats, lists, indentation, link and embed),
+and `full`, every button there is (the default adds the clipboard buttons, alignment, sub/superscript
+and the source editor). Pick one per field, and still override any single option:
+
+```php
+$builder->add('body', LexicalFormType::class, ['preset' => 'full']);
+$builder->add('summary', LexicalFormType::class, ['preset' => 'compact', 'height' => '120px']);
+```
+
+Presets of your own are declared once in the bundle configuration (see
+[Application-wide defaults](#application-wide-defaults)); a key a preset leaves out falls back to the
+`default` preset, so `compact` above only needs to list what makes it compact.
 
 #### Toolbar and grouping
 
@@ -195,8 +212,9 @@ $builder->add('description', LexicalFormType::class, [
 
 ### Application-wide defaults
 
-Rather than repeating options at every call site, set defaults once. Every key mirrors a form option,
-and per-field options still win:
+Rather than repeating options at every call site, set defaults once. The top-level keys are the
+`default` preset every field starts from, and `presets` adds named ones; every key mirrors a form
+option, and per-field options still win:
 
 ```yaml
 # config/packages/flexible_ux_lexical.yaml
@@ -204,10 +222,21 @@ flexible_ux_lexical:
     toolbar: ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink']
     height: '320px'
     allowed_link_schemes: ['https']
+    presets:
+        compact:
+            toolbar: ['bold', 'italic', '|', 'link', 'unlink']
+            height: '120px'
+        strict:
+            allowed_link_schemes: ['https']
 ```
 
+A preset only lists what it changes: `strict` above keeps the application's toolbar and height. The
+built-in `full` preset inherits these defaults as well (only its toolbar is fixed), and an application
+may redefine it. A typo in a configured toolbar fails at the first cache warm-up, naming the preset.
+
 This is also how a feature is opted out for the whole application at once — the `toolbar` above,
-for instance, has no alignment buttons, so no field gets them unless it overrides the option.
+for instance, has no alignment buttons, so no field gets them unless it overrides the option or picks
+a preset that has them.
 
 Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 

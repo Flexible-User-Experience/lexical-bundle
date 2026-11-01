@@ -71,9 +71,15 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 25 buttons, in eight groups   | Ordered entries: button names and `\|` separators. |
-| `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
-| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
+| `preset`               | `string`   | `'default'`                       | The preset the other options default to (`default`, `full`, or one the application configures). |
+| `toolbar`              | `string[]` | the preset's (`default`: 14 buttons in six groups) | Ordered entries: button names and `\|` separators. |
+| `height`               | `string`   | the preset's (`'200px'`)          | Minimum editable height (any CSS length). |
+| `allowed_link_schemes` | `string[]` | the preset's (`['http','https','mailto','tel']`) | URL schemes the link modal accepts. |
+
+`LexicalFormType::DEFAULT_TOOLBAR` is `undo`, `redo` · `bold`, `italic`, `underline`,
+`strikethrough`, `remove-format` · `bullet`, `number` · `indent`, `outdent` · `link`, `unlink` ·
+`iframe`. `LexicalFormType::FULL_TOOLBAR` (the `full` preset) adds `cut`, `copy`, `paste`,
+`paste-word`, `subscript`, `superscript`, the four `align-*` buttons and `source`, in eight groups.
 
 `allowed_link_schemes` entries may be written with or without the trailing colon and in any case
 (`https`, `https:` and `HTTPS:` are equivalent). The list is normalised server-side and handed to the
@@ -105,9 +111,12 @@ Redundant separators — leading, trailing or repeated — are dropped during op
 hand-written list can never render a stray or doubled divider. An entry that is neither a known button
 nor `|` raises an `InvalidOptionsException` naming the offending entry and listing the valid buttons.
 
-## Application-wide defaults
+## Application-wide defaults and presets
 
-All three options can be defaulted once for the whole application. Per-field options still win:
+The three options can be defaulted once for the whole application; those top-level keys are the
+`default` preset. `presets` declares named ones a field selects with `preset`; a key a preset leaves
+out falls back to the `default` preset, and `full` (every button, otherwise the defaults) is built in
+unless the application redefines it. Per-field options still win:
 
 ```yaml
 # config/packages/flexible_ux_lexical.yaml
@@ -115,11 +124,21 @@ flexible_ux_lexical:
     toolbar: ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink']
     height: '320px'
     allowed_link_schemes: ['https']
+    presets:
+        compact:
+            toolbar: ['bold', 'italic', '|', 'link', 'unlink']
+            height: '120px'
 ```
 
-The values are bound to the `flexible_ux_lexical.toolbar`, `.height` and `.allowed_link_schemes`
-container parameters and injected into the form type, so `config:dump-reference flexible_ux_lexical`
-documents them and an unknown key fails at container compile time.
+```php
+$builder->add('summary', LexicalFormType::class, ['preset' => 'compact']);
+```
+
+The resolved presets are bound to the `flexible_ux_lexical.presets` container parameter and injected
+into the form type, so `config:dump-reference flexible_ux_lexical` documents the keys, an unknown key
+fails at container compile time and so does a toolbar entry that is not a button (the error names the
+preset). The widget carries the preset name as `data-preset`, for stylesheets that want to vary by
+preset.
 
 `undo` and `redo` dispatch Lexical's `UNDO_COMMAND` / `REDO_COMMAND` and stay disabled while their
 stack is empty, exactly like the keyboard shortcuts they mirror. Their availability mirrors the

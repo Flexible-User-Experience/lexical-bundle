@@ -10,3 +10,10 @@ flexible_ux_lexical:
 
     # URL schemes the link modal accepts; anything else (notably javascript: and data:) is rejected.
     # allowed_link_schemes: ['http', 'https', 'mailto', 'tel']
+
+    # Named presets a field selects with its "preset" option; a key left out falls back to the
+    # defaults above. "full" (every button) is built in.
+    # presets:
+    #     compact:
+    #         toolbar: ['bold', 'italic', '|', 'link', 'unlink']
+    #         height: '120px'

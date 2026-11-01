@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The default toolbar is leaner. `LexicalFormType::DEFAULT_TOOLBAR` now lists `undo`, `redo` /
+  `bold`, `italic`, `underline`, `strikethrough`, `remove-format` / `bullet`, `number` / `indent`,
+  `outdent` / `link`, `unlink` / `iframe` (14 buttons in six groups); the clipboard buttons,
+  alignment, sub/superscript and the source editor moved to the new `full` preset. Nothing is
+  gone: a field that wants the previous toolbar sets `'preset' => 'full'`, an application sets
+  `flexible_ux_lexical.toolbar` (or `presets`) once. The `AVAILABLE_BUTTONS` list and every button
+  name are unchanged. Applications that never configured `toolbar` get the lean default after
+  updating, which is the point: what a text field needs, nothing more, Rails style.
+
+### Added
+
+- Presets. The bundle configuration gains `presets`, a map of named option sets (`toolbar`,
+  `height`, `allowed_link_schemes`) a field selects with the new `preset` form option; a key a
+  preset leaves out falls back to the `default` preset, which is what the top-level keys have
+  always configured. `full` (every button, otherwise the defaults) is built in and may be
+  redefined. A preset toolbar with an unknown entry fails at the first cache warm-up, naming the
+  preset, and an unknown `preset` option fails like any other invalid option. The form type now
+  takes the presets as its single constructor argument (`flexible_ux_lexical.presets` parameter);
+  the `.toolbar`, `.height` and `.allowed_link_schemes` parameters are gone. The widget carries
+  `data-preset="<name>"` for stylesheets.
+
 ### Fixed
 
 - An empty required field no longer blocks the form silently. The textarea keeps Symfony's
