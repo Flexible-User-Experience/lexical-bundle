@@ -39,12 +39,24 @@ final class LexicalHtmlSanitizerTest extends TestCase
 
     public function testLinkSchemesFollowTheConfiguredAllowlist(): void
     {
-        $sanitizer = new HtmlSanitizer(LexicalHtmlSanitizerConfigFactory::create(['https', 'mailto:']));
+        $sanitizer = new HtmlSanitizer(LexicalHtmlSanitizerConfigFactory::create(['https', 'mailto:'], false));
 
         self::assertSame(
             // (The sanitizer spells the mailto's @ as an entity; browsers read it back as @.)
             '<p><a href="https://a.test">a</a> <a>b</a> <a href="mailto:x&#64;y.test">c</a> <a>d</a></p>',
             $sanitizer->sanitize('<p><a href="https://a.test">a</a> <a href="http://b.test">b</a> <a href="mailto:x@y.test">c</a> <a href="/relative">d</a></p>'),
+        );
+    }
+
+    public function testRelativeLinksFollowTheOption(): void
+    {
+        $links = '<p><a href="/about">a</a> <a href="#top">b</a> <a href="?page=2">c</a></p>';
+
+        // (The sanitizer spells the query's = as an entity; browsers read it back as =.)
+        self::assertSame(str_replace('?page=2', '?page&#61;2', $links), $this->sanitize($links));
+        self::assertSame(
+            '<p><a>a</a> <a>b</a> <a>c</a></p>',
+            (new HtmlSanitizer(LexicalHtmlSanitizerConfigFactory::create(['https'], false)))->sanitize($links),
         );
     }
 

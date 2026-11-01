@@ -234,6 +234,14 @@ final class LexicalFormTypeTest extends TypeTestCase
         self::assertSame(['https'], $view->vars['lexical_allowed_link_schemes']);
     }
 
+    public function testRelativeLinksAreAllowedByDefaultAndPerField(): void
+    {
+        self::assertTrue($this->factory->create(LexicalFormType::class)->createView()->vars['lexical_allow_relative_links']);
+        self::assertFalse(
+            $this->factory->create(LexicalFormType::class, null, ['allow_relative_links' => false])->createView()->vars['lexical_allow_relative_links'],
+        );
+    }
+
     public function testRejectsNonStringAllowedLinkSchemes(): void
     {
         $this->expectException(\Symfony\Component\OptionsResolver\Exception\InvalidOptionsException::class);

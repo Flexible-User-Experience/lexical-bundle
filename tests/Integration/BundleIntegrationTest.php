@@ -211,6 +211,28 @@ final class BundleIntegrationTest extends KernelTestCase
         // Default link-scheme allowlist reaches the controller.
         self::assertStringContainsString('data-lexical-allowed-link-schemes-value=', $html);
         self::assertStringContainsString('["http","https","mailto","tel"]', html_entity_decode($html));
+        self::assertStringContainsString('data-lexical-allow-relative-links-value="true"', $html);
+        // The URL field is a text input: a relative path or a fragment is a legitimate link
+        // (type="url" would reject both before the controller's allowlist had a say).
+        self::assertStringContainsString('<input type="text" inputmode="url" class="lexical__dialog-input" placeholder="https://" autofocus', $html);
+        self::assertStringNotContainsString('<input type="url"', $html);
+    }
+
+    public function testRelativeLinksCanBeDisabledApplicationWide(): void
+    {
+        $kernel = new TestKernel('test', false, ['allow_relative_links' => false]);
+        $kernel->boot();
+        $container = $kernel->getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
+        self::assertFalse($view->vars['lexical_allow_relative_links']);
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+        self::assertStringContainsString('data-lexical-allow-relative-links-value="false"', $html);
+
+        // The sanitizer follows the same switch.
+        self::assertSame('<p><a>x</a></p>', $container->get('test.lexical_sanitizer')->sanitize('<p><a href="/about">x</a></p>'));
+
+        $kernel->shutdown();
     }
 
     public function testRequiredAndPlaceholderReachTheTextarea(): void

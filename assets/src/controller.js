@@ -168,6 +168,7 @@ export default class extends Controller {
         invalidEmbedSizeMessage: String,
         clipboardDeniedMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
+        allowRelativeLinks: { type: Boolean, default: true },
     };
 
     connect() {
@@ -287,11 +288,18 @@ export default class extends Controller {
     // A URL is safe when it parses and its scheme is in the configured allowlist (the
     // `allowed_link_schemes` form option). The URL constructor normalises the scheme (so
     // HTTPS:// passes) and throws on malformed input, so this also rejects
-    // javascript:/data: and anything that is not a real absolute URL.
+    // javascript:/data: and anything that is not a real absolute URL. A root-relative path
+    // (`/about`), a fragment (`#top`) or a query (`?page=2`) stays on the site and is allowed
+    // too unless `allow_relative_links` is off; a protocol-relative `//host` is none of these
+    // and fails the scheme check, having no scheme to check.
     #isSafeUrl(value) {
+        const url = String(value).trim();
+        if (this.allowRelativeLinksValue && /^(\/(?!\/)|#|\?)/.test(url)) {
+            return true;
+        }
         let protocol;
         try {
-            protocol = new URL(value).protocol.toLowerCase();
+            protocol = new URL(url).protocol.toLowerCase();
         } catch {
             return false;
         }

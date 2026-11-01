@@ -85,8 +85,10 @@ final class LexicalHtmlSanitizerConfigFactory
     /**
      * @param list<string> $allowedLinkSchemes the schemes a link may use, as the `allowed_link_schemes`
      *                                         option spells them (with or without the trailing colon)
+     * @param bool         $allowRelativeLinks whether a link may also be a root-relative path, a fragment or
+     *                                         a query, as the `allow_relative_links` option
      */
-    public static function create(array $allowedLinkSchemes): HtmlSanitizerConfig
+    public static function create(array $allowedLinkSchemes, bool $allowRelativeLinks = true): HtmlSanitizerConfig
     {
         // The default action for everything not configured below is Drop: element and content.
         $config = (new HtmlSanitizerConfig())
@@ -94,7 +96,7 @@ final class LexicalHtmlSanitizerConfigFactory
                 static fn (string $scheme): string => rtrim(strtolower(trim($scheme)), ':'),
                 $allowedLinkSchemes,
             ))))
-            ->allowRelativeLinks(false)
+            ->allowRelativeLinks($allowRelativeLinks)
             ->allowMediaSchemes(self::EMBED_SCHEMES)
             // A relative frame source resolves against the page, like the editor accepts.
             ->allowRelativeMedias()

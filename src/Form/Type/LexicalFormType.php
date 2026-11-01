@@ -35,6 +35,9 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *  - `allowed_link_schemes`: URL schemes the link modal accepts, written with or without
  *    the trailing colon. Defaults to `http`, `https`, `mailto` and `tel`; anything outside
  *    the list (notably `javascript:` and `data:`) is rejected.
+ *  - `allow_relative_links`: whether the link modal (and the import allowlist) also accept a
+ *    root-relative path (`/about`), a fragment (`#top`) or a query (`?page=2`) besides the
+ *    allowed schemes. Defaults to the bundle configuration (`true`).
  *  - `sanitize`: whether what the field receives on submission is run through the bundle's
  *    HTML sanitizer (the allowlist of what the editor produces), the server-side counterpart
  *    of the editor's own checks. Defaults to the bundle configuration (`true`). A field that
@@ -135,6 +138,11 @@ final class LexicalFormType extends AbstractType
     public const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
 
     /**
+     * Whether relative links are accepted when `allow_relative_links` is not overridden.
+     */
+    public const DEFAULT_ALLOW_RELATIVE_LINKS = true;
+
+    /**
      * The option keys a preset may set.
      *
      * @var list<string>
@@ -153,11 +161,13 @@ final class LexicalFormType extends AbstractType
      *                                                                                                                             which itself falls back to the class constants. `full` is added when missing.
      * @param HtmlSanitizerInterface|null                                                                          $sanitizer         The sanitizer behind the `sanitize` option; without one the option has no effect
      * @param bool                                                                                                 $sanitizeByDefault The default of the `sanitize` option (the bundle's `sanitize` configuration key)
+     * @param bool                                                                                                 $allowRelativeLinksByDefault The default of the `allow_relative_links` option (the bundle's key of the same name)
      */
     public function __construct(
         array $presets = [],
         private readonly ?HtmlSanitizerInterface $sanitizer = null,
         private readonly bool $sanitizeByDefault = true,
+        private readonly bool $allowRelativeLinksByDefault = self::DEFAULT_ALLOW_RELATIVE_LINKS,
     ) {
         $this->presets = self::resolvePresets($presets);
     }
@@ -195,8 +205,10 @@ final class LexicalFormType extends AbstractType
             'toolbar' => static fn (Options $options): array => $presets[$options['preset']]['toolbar'],
             'height' => static fn (Options $options): string => $presets[$options['preset']]['height'],
             'allowed_link_schemes' => static fn (Options $options): array => $presets[$options['preset']]['allowed_link_schemes'],
+            'allow_relative_links' => $this->allowRelativeLinksByDefault,
             'sanitize' => $this->sanitizeByDefault,
         ]);
+        $resolver->setAllowedTypes('allow_relative_links', 'bool');
         $resolver->setAllowedTypes('sanitize', 'bool');
         $resolver->setAllowedTypes('preset', 'string');
         $resolver->setAllowedValues('preset', array_keys($presets));
@@ -220,6 +232,7 @@ final class LexicalFormType extends AbstractType
         $view->vars['lexical_separator'] = self::SEPARATOR;
         $view->vars['lexical_height'] = $options['height'];
         $view->vars['lexical_allowed_link_schemes'] = $options['allowed_link_schemes'];
+        $view->vars['lexical_allow_relative_links'] = $options['allow_relative_links'];
     }
 
     public function getParent(): string

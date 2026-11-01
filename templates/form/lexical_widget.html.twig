@@ -40,6 +40,8 @@
         source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
     {%- set lexical_sep = lexical_separator|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::SEPARATOR')) -%}
+    {#- The boolean value below is not written with `|default(true)`: Twig's default filter treats an
+        explicit false as "empty" and would hand the controller true. -#}
     <div class="lexical" data-preset="{{ lexical_preset|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_PRESET')) }}"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
@@ -47,6 +49,7 @@
              invalidEmbedSizeMessage: 'error.invalid_embed_size'|trans({}, 'FlexibleUxLexical'),
              clipboardDeniedMessage: 'error.clipboard_denied'|trans({}, 'FlexibleUxLexical'),
              allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
+             allowRelativeLinks: lexical_allow_relative_links is defined ? lexical_allow_relative_links : true,
          }) }}
          style="--lexical-min-height: {{ lexical_height|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_HEIGHT')) }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
@@ -87,7 +90,9 @@
             <div class="lexical__dialog-body">
                 <label class="lexical__dialog-label">
                     {{ 'dialog.link.url_label'|trans({}, 'FlexibleUxLexical') }}
-                    <input type="url" class="lexical__dialog-input" placeholder="https://" autofocus
+                    {#- A text input, not type="url": a root-relative path or a fragment is a legitimate
+                        link, and the controller validates against the allowlist anyway. -#}
+                    <input type="text" inputmode="url" class="lexical__dialog-input" placeholder="https://" autofocus
                            {{ stimulus_target('lexical', 'urlInput')|stimulus_action('lexical', 'dialogKeydown', 'keydown') }}>
                 </label>
                 <label class="lexical__dialog-check">

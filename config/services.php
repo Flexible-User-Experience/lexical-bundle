@@ -37,6 +37,7 @@ return static function (ContainerConfigurator $container): void {
         ->factory([LexicalHtmlSanitizerConfigFactory::class, 'create'])
         ->args([
             param('flexible_ux_lexical.sanitizer.allowed_link_schemes'),
+            param('flexible_ux_lexical.allow_relative_links'),
         ]);
 
     $services->set('flexible_ux_lexical.html_sanitizer', HtmlSanitizer::class)
@@ -50,6 +51,7 @@ return static function (ContainerConfigurator $container): void {
             param('flexible_ux_lexical.presets'),
             service('flexible_ux_lexical.html_sanitizer'),
             param('flexible_ux_lexical.sanitize'),
+            param('flexible_ux_lexical.allow_relative_links'),
         ])
         ->tag('form.type');
 

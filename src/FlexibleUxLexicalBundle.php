@@ -58,6 +58,10 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
                     ->scalarPrototype()->end()
                     ->defaultValue(LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES)
                 ->end()
+                ->booleanNode('allow_relative_links')
+                    ->info('Accept a root-relative path (/about), a fragment (#top) or a query (?page=2) as a link, besides the allowed schemes. Overridable per field with the "allow_relative_links" option.')
+                    ->defaultValue(LexicalFormType::DEFAULT_ALLOW_RELATIVE_LINKS)
+                ->end()
                 ->booleanNode('sanitize')
                     ->info('Run what a field receives on submission through the bundle\'s HTML sanitizer (the allowlist of what the editor produces). A field that submits the string it was rendered with is left alone. Overridable per field with the "sanitize" option.')
                     ->defaultTrue()
@@ -125,6 +129,7 @@ final class FlexibleUxLexicalBundle extends AbstractBundle
 
         $container->setParameter('flexible_ux_lexical.presets', $presets);
         $container->setParameter('flexible_ux_lexical.sanitize', $config['sanitize']);
+        $container->setParameter('flexible_ux_lexical.allow_relative_links', $config['allow_relative_links']);
 
         // The sanitizer serves every field, whatever its preset, so its link allowlist is the
         // union of the presets' schemes - any link a field may legitimately produce passes.
