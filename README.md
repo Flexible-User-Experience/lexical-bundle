@@ -119,6 +119,7 @@ $builder->add('description', LexicalFormType::class, [
 | `toolbar`              | `string[]` | the preset's; `default` has 14 buttons in six `\|`-separated groups | Ordered toolbar entries: button names and `\|` separators. |
 | `height`               | `string`   | the preset's; `'200px'`                    | Minimum editable height (any CSS length).               |
 | `allowed_link_schemes` | `string[]` | the preset's; `['http','https','mailto','tel']` | URL schemes the link modal accepts.                |
+| `sanitize`             | `bool`     | `true` (the bundle's `sanitize` key)       | Run a changed submission through the bundle's HTML sanitizer. |
 
 #### Presets
 
@@ -240,13 +241,41 @@ a preset that has them.
 
 Run `php bin/console config:dump-reference flexible_ux_lexical` to see the full reference.
 
+### Rendering the stored content
+
 The editor stores **plain, semantic HTML**: `<p>`, `<strong>`, `<em>`, `<u>`, `<s>`, `<sub>`,
 `<sup>`, `<ul>` / `<ol>` / `<li>`, `<a href target rel>`, `<iframe>`, with alignment and indentation
 as inline `text-align` / `padding-inline-start` styles — no editor classes, no wrapping spans, nothing
-a stylesheet of yours has to know about. When you render that HTML on a public page, output it as
-trusted markup (e.g. Twig's `|raw`) — links are restricted to `allowed_link_schemes` and embeds to
-`http(s)` frame sources by the editor, but you remain responsible for sanitising any HTML that reaches
-the field from other sources.
+a stylesheet of yours has to know about. Render it with the `lexical_content` filter:
+
+```twig
+{{ post.body|lexical_content }}
+{# <div class="lexical-content"><p>Hello <strong>bold</strong> ...</p></div> #}
+```
+
+The filter runs the HTML through the bundle's sanitizer — Symfony's HtmlSanitizer configured with
+exactly what the editor produces: its elements and attributes, the application's
+`allowed_link_schemes` for links, `http(s)` for frame sources, `text-align` and
+`padding-inline-start` as the only block styles — and wraps the result in `<div class="lexical-content">`,
+the class the shipped `lexical-content.css` styles (the editor's own surface carries it too, so the
+page looks like the editor). Content the editor wrote passes with nothing removed; anything else is cut down
+to the same shape - the wrappers other editors leave behind (`<div>`, tables, `<font>`) lose their tag
+but keep their text, and `<script>`, event handlers, media or a `javascript:` link never make it out. No `|raw`
+needed. `lexical_content('prose')` picks another class, `lexical_sanitize` sanitises without the
+wrapper, and the sanitizer itself is autowirable as `HtmlSanitizerInterface $lexicalHtmlSanitizer`
+for code that renders or imports stored content outside Twig.
+
+Include the content stylesheet on the pages that render content, for instance from `assets/app.js`:
+
+```js
+import '@flexible-ux/lexical-bundle/styles/lexical-content.css';
+```
+
+The same sanitizer guards the way in: by default a field sanitises what it receives on submission
+(the `sanitize` option, `true` unless the bundle's `sanitize` configuration key says otherwise), so a
+client without JavaScript, or without the editor's own checks, cannot store what the editor would
+not have produced. A field that submits the very string it was rendered with is left alone — that
+string is your data, and may legitimately hold markup migrated from another editor.
 
 ## How it works
 
@@ -258,7 +287,11 @@ The bundle is deliberately split into four layers so each can be understood and 
   link modal.
 - **JS** — the `lexical` Stimulus controller mounts Lexical on the editable element and keeps the
   textarea in sync.
-- **CSS** — `assets/styles/lexical.css` (imported by the controller).
+- **CSS** — `assets/styles/lexical.css`, the editor's chrome, and `assets/styles/lexical-content.css`,
+  the stored content (both imported by the controller; the second is also for the pages that render
+  the content).
+- **Rendering** — the `lexical_content` / `lexical_sanitize` Twig filters and the
+  `flexible_ux_lexical.html_sanitizer` service behind them and behind the `sanitize` option.
 
 See [`docs/index.md`](docs/index.md) for customisation, theming and translation details.
 

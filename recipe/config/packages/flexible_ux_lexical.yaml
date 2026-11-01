@@ -11,6 +11,9 @@ flexible_ux_lexical:
     # URL schemes the link modal accepts; anything else (notably javascript: and data:) is rejected.
     # allowed_link_schemes: ['http', 'https', 'mailto', 'tel']
 
+    # Run a changed submission through the bundle's HTML sanitizer (the editor's own allowlist).
+    # sanitize: true
+
     # Named presets a field selects with its "preset" option; a key left out falls back to the
     # defaults above. "full" (every button) is built in.
     # presets:

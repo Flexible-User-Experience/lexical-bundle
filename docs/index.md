@@ -13,6 +13,7 @@ Stimulus and UX Icons, and it stores plain HTML.
   - [The icons](#the-icons)
   - [The styles](#the-styles)
   - [Translations](#translations)
+- [Rendering stored content](#rendering-stored-content)
 - [Security notes](#security-notes)
 - [Troubleshooting](#troubleshooting)
 
@@ -227,6 +228,9 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 | JS    | `assets/src/iframe-node.js`         | The `IframeNode` the `iframe` button inserts (import, export, preview). |
 | JS    | `assets/src/html-export.js`         | The `html.export` overrides that keep the stored HTML semantic and class-free. |
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
+| CSS   | `assets/styles/lexical-content.css` | The stored content, in the editor and on the page (imported by the controller; the page includes it too). |
+| PHP   | `src/Html/LexicalHtmlSanitizerConfigFactory.php`, `src/Html/StyleAttributeSanitizer.php` | The sanitizer configuration mirroring the editor's output. |
+| Twig  | `src/Twig/LexicalContentExtension.php`, `src/Twig/LexicalContentRuntime.php` | The `lexical_content` / `lexical_sanitize` filters. |
 | Icons | `assets/icons/*.svg`                | Lucide glyphs served as `lexical:<name>`. |
 
 The Stimulus controller reads the textarea's HTML into Lexical on `connect()` and writes HTML back
@@ -316,6 +320,37 @@ controller mirrors onto the editing surface what the user actually works with:
   and the toggle buttons of the toolbar (text formats, alignment, lists, link, iframe) expose
   `aria-pressed`.
 
+## Rendering stored content
+
+```twig
+{{ post.body|lexical_content }}          {# <div class="lexical-content">...sanitised HTML...</div> #}
+{{ post.body|lexical_content('prose') }} {# another container class #}
+{{ post.body|lexical_sanitize }}         {# sanitised, no container #}
+```
+
+Both filters are marked safe for HTML; the sanitizer is what makes them safe. It is Symfony's
+HtmlSanitizer configured by `FlexibleUx\LexicalBundle\Html\LexicalHtmlSanitizerConfigFactory` to
+mirror the editor's output (`ALLOWED_ELEMENTS`, with their attributes): links may use the union of
+every preset's `allowed_link_schemes`, frame sources `http(s)` or a relative URL, inline styles are
+cut down declaration by declaration by `StyleAttributeSanitizer` (`text-align` and
+`padding-inline-start` on blocks, text styles on `<span>`), the common wrappers of other editors
+(`BLOCKED_ELEMENTS`: `div`, `section`, a table and its cells, `font`, ...) lose their tag but keep
+their text, and everything else - scripts, styles, forms, media, unknown elements - is dropped with
+its content. There is no input
+length limit (Symfony's default would truncate a body at 20 000 characters). The service is
+`flexible_ux_lexical.html_sanitizer`, autowirable as `HtmlSanitizerInterface $lexicalHtmlSanitizer`.
+
+`lexical-content.css` styles the container: paragraphs, lists, links, quotes, embeds. Include it on
+the pages that render content (`import '@flexible-ux/lexical-bundle/styles/lexical-content.css'`
+from `assets/app.js`, or an `asset()` link). The editor's surface carries the same class and imports
+the same file, so the editor shows what the page will show; override `.lexical-content` rules in
+your own stylesheet to change both at once.
+
+The same sanitizer is applied on the way in. With `sanitize` on (the default, per field or through
+the bundle's `sanitize` key), a `PRE_SUBMIT` listener sanitises what the field receives - except a
+submission equal to the string the field was rendered with, which is the application's own data
+and may hold markup from elsewhere that the editor would strip; an untouched field never loses it.
+
 ## Security notes
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
@@ -337,8 +372,10 @@ controller mirrors onto the editing surface what the user actually works with:
   round-tripping stored content through the editor cannot silently widen what an embed may do. The
   editor does not add one to the exported markup: sandboxing new embeds is the frontend's call, not
   the editor's.
-- The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
-  sanitise anything that can reach the field from outside this editor.
+- The field stores HTML. Render it with `lexical_content` (or `lexical_sanitize`), which sanitises
+  with the editor's own allowlist; with `|raw` you are trusting whatever reached the field. On the
+  way in, the `sanitize` option (default on) applies the same allowlist to every changed submission,
+  so a client bypassing the editor cannot store what the editor would not have produced.
 
 ## Troubleshooting
 

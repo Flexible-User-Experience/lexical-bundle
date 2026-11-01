@@ -7,8 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Rendering and sanitising stored content. The `lexical_content` Twig filter sanitises a field's
+  HTML and wraps it in `<div class="lexical-content">`; `lexical_sanitize` sanitises without the
+  wrapper. Behind them is the new `flexible_ux_lexical.html_sanitizer` service (autowirable as
+  `HtmlSanitizerInterface $lexicalHtmlSanitizer`): Symfony's HtmlSanitizer configured by
+  `LexicalHtmlSanitizerConfigFactory` to mirror exactly what the editor produces - its elements
+  and attributes, the union of the presets' `allowed_link_schemes` for links, `http(s)` or a
+  relative URL for frame sources, inline styles cut down to `text-align` / `padding-inline-start`
+  on blocks and text styles on spans by `StyleAttributeSanitizer`, the common wrappers of other
+  editors (`div`, `section`, tables and their cells, `font`, ...) blocked (tag dropped, text kept),
+  everything else dropped with its content, no input length limit. The HTML the editor exports
+  passes the sanitizer with nothing removed (its one spelling change: the boolean
+  `allowfullscreen=""` comes out bare). `symfony/html-sanitizer` is a
+  new requirement of the bundle.
+- The `sanitize` form option and bundle configuration key (default `true`): a changed submission
+  is sanitised with the same allowlist on the way in, the server-side counterpart of the
+  editor's checks, so a client without JavaScript cannot store what the editor would never
+  produce. A submission equal to the string the field was rendered with is left alone - it is
+  the application's own data and may legitimately hold markup from elsewhere, so an untouched
+  field never loses anything.
+- `assets/styles/lexical-content.css`: the stylesheet of the stored content (paragraphs, lists,
+  links, quotes, code, embeds), scoped to `.lexical-content`. The editor's surface carries that
+  class and the controller imports the file, so the editor shows what the page will show; a page
+  rendering content includes the same file once.
+
 ### Changed
 
+- The block rules of `assets/styles/lexical.css` (`.lexical__p`, `.lexical__ul`, `.lexical__ol`,
+  `.lexical__li`, `.lexical__link`) moved to `lexical-content.css` as element rules under
+  `.lexical-content`; the theme classes themselves stay on the editor's DOM. A stylesheet that
+  overrode those class rules should target `.lexical-content p` (and friends) instead, which
+  now also styles the rendered page.
 - The HTML the field stores is plain and semantic. Lexical's own export spells a document the
   way the editor renders it - a theme class on every block (`<p class="lexical__p">`), every run
   of text in a `<span style="white-space: pre-wrap;">`, formats doubled up as `<b><strong>` - and
