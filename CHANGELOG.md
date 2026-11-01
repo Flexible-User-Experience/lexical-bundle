@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- An empty required field no longer blocks the form silently. The textarea keeps Symfony's
+  `required` attribute but is `display: none` once the editor is up, so the browser's validation
+  stopped the submission without any message ("An invalid form control with name='...' is not
+  focusable" in the console was all there was). The controller now listens to the textarea's
+  `invalid` event, shows the browser's own message in a `role="alert"` slot under the editor
+  (`lexical__error`), marks the surface `aria-invalid` and focuses the editor when it is the first
+  invalid control of the form; the first change to the document clears the message.
+
 ### Added
 
+- A `placeholder` passed through the field's `attr` option is shown in the editor while the document
+  is empty, the way the textarea would show it (`lexical--empty` on the wrapper, a `::before`
+  pseudo-element in the stylesheet).
+- The editing surface now has an accessible name: the field's label is linked to it with
+  `aria-labelledby` (the label gets an id when it has none) and a click on the label focuses the
+  editor; `aria-label` and `aria-describedby` of the textarea are mirrored, `aria-required`
+  follows the `required` option and the toolbar's toggle buttons (text formats, alignment, lists,
+  link, iframe) expose `aria-pressed`.
 - A Symfony Flex recipe, kept in `recipe/` in the layout symfony/recipes-contrib expects under
   `flexible-ux/lexical-bundle/1.0/`: `manifest.json` registers the bundle for all environments and
   declares the `lexical` / `lexical-bundle` aliases, `config/packages/flexible_ux_lexical.yaml` is

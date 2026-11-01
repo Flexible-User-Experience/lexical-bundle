@@ -203,7 +203,7 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 |-------|------|----------------|
 | PHP   | `src/Form/Type/LexicalFormType.php` | Declares options, exposes `lexical_toolbar` / `lexical_height` view vars. |
 | Bundle| `src/FlexibleUxLexicalBundle.php`   | Registers the tagged service, prepends the form theme + icon set. |
-| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, the link/source/iframe `<dialog>`s. |
+| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, validation message slot, the link/source/iframe `<dialog>`s. |
 | JS    | `assets/src/controller.js`          | Mounts Lexical, syncs the textarea, drives the toolbar. |
 | JS    | `assets/src/iframe-node.js`         | The `IframeNode` the `iframe` button inserts (import, export, preview). |
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
@@ -264,6 +264,27 @@ French, Italian and Portuguese ship with the bundle). Add or override a locale b
 `translations/FlexibleUxLexical.<locale>.xlf` in your application. Keys: `toolbar.*`,
 `dialog.link.*`, `dialog.source.*`, `dialog.iframe.*`, `dialog.cancel`, `dialog.confirm`,
 `error.invalid_url`, `error.invalid_embed_url`, `error.invalid_embed_size`, `error.clipboard_denied`.
+
+## Validation and accessibility
+
+The hidden textarea is still the form control: `required` (Symfony's default), `disabled`,
+`readonly` and the `placeholder` of `attr` all land on it as for a plain `TextareaType`. The
+controller mirrors onto the editing surface what the user actually works with:
+
+- **Required.** An empty required field is stopped by the browser's own form validation, as any
+  textarea would be. The browser cannot show its message by a `display: none` control, so the
+  controller listens to the textarea's `invalid` event, shows the browser's message (already in the
+  page's language) in a `role="alert"` element under the editor, sets `aria-invalid="true"` on the
+  surface and focuses the editor when it is the first invalid control of the form. The first change
+  to the document clears the message. `form.checkValidity()` and `form.reportValidity()` keep
+  working through the textarea.
+- **Placeholder.** The textarea's `placeholder` is shown in the editor while the document is empty
+  (`lexical--empty` on the wrapper, drawn by a `::before` pseudo-element, so Lexical never sees it).
+- **Accessible name.** The field's `<label>` gets an id if it has none and the surface points at it
+  with `aria-labelledby`; a click on the label focuses the editor. `aria-label` and
+  `aria-describedby` set on the textarea are mirrored as well, `aria-required` follows the option,
+  and the toggle buttons of the toolbar (text formats, alignment, lists, link, iframe) expose
+  `aria-pressed`.
 
 ## Security notes
 

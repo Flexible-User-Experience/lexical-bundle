@@ -175,6 +175,24 @@ $builder->add('description', LexicalFormType::class, [
 ]);
 ```
 
+#### Required fields, placeholder and labels
+
+The field behaves like the textarea it replaces. A `required` field (Symfony's default) that is
+submitted empty is stopped by the browser as usual; since the browser cannot show its message by the
+hidden textarea, the controller shows that same message under the editor, marks the surface
+`aria-invalid` and moves the focus into it. A `placeholder` passed through `attr` shows in the
+editor while the document is empty. The field's label is linked to the editing surface with
+`aria-labelledby`, so it names the editor for assistive technology and a click on it focuses the
+editor; `aria-required` mirrors the option and the toggle buttons expose their state with
+`aria-pressed`.
+
+```php
+$builder->add('description', LexicalFormType::class, [
+    'required' => true,
+    'attr' => ['placeholder' => 'Write something...'],
+]);
+```
+
 ### Application-wide defaults
 
 Rather than repeating options at every call site, set defaults once. Every key mirrors a form option,
