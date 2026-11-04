@@ -5,16 +5,27 @@
          colors="true"
          failOnWarning="true"
          failOnDeprecation="true"
+         defaultTestSuite="default"
 >
     <php>
         <ini name="display_errors" value="1"/>
         <env name="APP_ENV" value="test" force="true"/>
         <env name="APP_DEBUG" value="0" force="true"/>
+        <!-- Panther: a headless Chrome driving the harness in tests/Browser/Harness. -->
+        <env name="PANTHER_CHROME_ARGUMENTS" value="--disable-dev-shm-usage --window-size=1200,900"/>
+        <env name="PANTHER_ERROR_SCREENSHOT_DIR" value="./var/panther/screenshots"/>
     </php>
 
     <testsuites>
-        <testsuite name="FlexibleUxLexicalBundle Test Suite">
+        <!-- The suite a bare phpunit run executes: unit and integration tests, no browser. -->
+        <testsuite name="default">
             <directory>tests</directory>
+            <exclude>tests/Browser</exclude>
+        </testsuite>
+        <!-- Selected with the testsuite option: needs Chrome, a chromedriver (see
+             tests/Browser/README.md) and a harness built with tests/Browser/Harness/build.php. -->
+        <testsuite name="browser">
+            <directory>tests/Browser</directory>
         </testsuite>
     </testsuites>
 

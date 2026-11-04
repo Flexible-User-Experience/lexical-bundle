@@ -18,7 +18,7 @@ jobs:
           - { php: '8.4', symfony: '8.*' }
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -42,3 +42,36 @@ jobs:
 
       - name: Run tests
         run: vendor/bin/phpunit
+
+  browser:
+    name: "Browser tests (Panther, headless Chrome)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      # The harness is a consumer of the bundle: this is `importmap:require` of the Lexical
+      # packages at the constraint assets/package.json declares, downloaded from jsDelivr.
+      - name: Build the browser harness
+        run: php tests/Browser/Harness/build.php
+
+      # ubuntu-latest ships Chrome and a matching chromedriver on the PATH, which Panther finds.
+      - name: Run the browser suite
+        run: vendor/bin/phpunit --testsuite browser
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: panther-screenshots
+          path: var/panther/screenshots/
+          if-no-files-found: ignore

@@ -5,3 +5,7 @@ composer.lock
 
 # App-only artifact that FrameworkBundle dumps in debug mode; must never live in a bundle.
 /config/reference.php
+
+# Browser tests: Panther's failure screenshots and the chromedriver bdi downloads.
+/var/
+/drivers/

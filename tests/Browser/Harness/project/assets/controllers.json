@@ -1,0 +1,11 @@
+{
+    "controllers": {
+        "@flexible-ux/lexical-bundle": {
+            "lexical": {
+                "enabled": true,
+                "fetch": "lazy"
+            }
+        }
+    },
+    "entrypoints": []
+}

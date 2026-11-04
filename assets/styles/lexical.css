@@ -1,11 +1,37 @@
 /* Lexical rich-text editor — FlexibleUx\Form\Type\LexicalFormType.
    Markup: lexical_widget form theme · Behaviour: assets/src/controller.js
-   This stylesheet is imported by the Stimulus controller, so AssetMapper links it
-   automatically; consumers do not need to include it themselves. */
+   This stylesheet is the editor's chrome (toolbar, surface, modals, the in-editor rendering
+   of text formats and embeds). The content itself — paragraphs, lists, links — is styled by
+   lexical-content.css, which the editable surface shares with the rendered page. Both are
+   imported by the Stimulus controller, so AssetMapper links them automatically; consumers
+   do not need to include them for the editor.
+
+   Colours, radius and the monospace stack are custom properties, declared on :root with the
+   defaults below so an application restyles the editor by redefining them - on :root, on a
+   `.lexical` ancestor, or inside a `prefers-color-scheme: dark` media query - without
+   touching a rule. The content's own variables live in lexical-content.css. */
+
+:root {
+    --lexical-border-color: #d2d6de;
+    --lexical-bg: #fff;
+    --lexical-color: #333;
+    --lexical-muted-color: #999;
+    --lexical-toolbar-bg: #f7f7f7;
+    --lexical-button-hover-bg: #e7e7e7;
+    --lexical-accent: #3c8dbc;
+    --lexical-accent-dark: #367fa9;
+    --lexical-accent-contrast: #fff;
+    --lexical-error-color: #a94442;
+    --lexical-error-bg: #fdf7f7;
+    --lexical-radius: 3px;
+    --lexical-dialog-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    --lexical-backdrop: rgba(0, 0, 0, 0.4);
+    --lexical-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 
 .lexical {
-    border: 1px solid #d2d6de;
-    background: #fff;
+    border: 1px solid var(--lexical-border-color);
+    background: var(--lexical-bg);
 }
 
 /* Toolbar + editable stay hidden until the controller adds `lexical--ready`, so a
@@ -15,18 +41,53 @@
     flex-wrap: wrap;
     gap: 2px;
     padding: 4px;
-    border-bottom: 1px solid #d2d6de;
-    background: #f7f7f7;
+    border-bottom: 1px solid var(--lexical-border-color);
+    background: var(--lexical-toolbar-bg);
 }
 
 .lexical__editable {
     display: none;
+    position: relative;
     min-height: var(--lexical-min-height, 200px);
     padding: 8px 12px;
     outline: none;
     overflow-y: auto;
-    color: #333;
+    color: var(--lexical-color);
     line-height: 1.5;
+}
+
+/* The textarea's placeholder, mirrored onto the editable surface by the controller and shown
+   while the document is empty (`lexical--empty`). A pseudo-element, so Lexical's reconciler
+   never sees it. */
+.lexical--empty .lexical__editable[data-placeholder]::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    left: 12px;
+    color: var(--lexical-muted-color);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* The browser's own validation message for an empty required field, which it cannot show by
+   the hidden textarea itself; the controller fills and reveals it on the `invalid` event. */
+.lexical__error {
+    display: block;
+    margin: 0;
+    padding: 6px 12px;
+    border-top: 1px solid var(--lexical-border-color);
+    background: var(--lexical-error-bg);
+    color: var(--lexical-error-color);
+    font-size: 13px;
+}
+
+.lexical__error[hidden] {
+    display: none;
+}
+
+.lexical--invalid {
+    border-color: var(--lexical-error-color);
 }
 
 .lexical--ready .lexical__toolbar {
@@ -49,20 +110,20 @@
     height: 28px;
     padding: 0 6px;
     border: 1px solid transparent;
-    border-radius: 3px;
+    border-radius: var(--lexical-radius);
     background: transparent;
-    color: #333;
+    color: var(--lexical-color);
     cursor: pointer;
 }
 
 .lexical__btn:not(:disabled):hover {
-    background: #e7e7e7;
+    background: var(--lexical-button-hover-bg);
 }
 
 .lexical__btn.is-active {
-    background: #3c8dbc;
-    color: #fff;
-    border-color: #367fa9;
+    background: var(--lexical-accent);
+    color: var(--lexical-accent-contrast);
+    border-color: var(--lexical-accent-dark);
 }
 
 .lexical__btn:disabled {
@@ -75,39 +136,12 @@
     align-self: stretch;
     width: 1px;
     margin: 2px 3px;
-    background: #d2d6de;
+    background: var(--lexical-border-color);
 }
 
 .lexical__icon {
     width: 16px;
     height: 16px;
-}
-
-.lexical__p {
-    margin: 0 0 8px;
-}
-
-.lexical__ul,
-.lexical__ol {
-    margin: 0 0 8px 1.5em;
-    padding: 0;
-}
-
-.lexical__ul {
-    list-style: disc;
-}
-
-.lexical__ol {
-    list-style: decimal;
-}
-
-.lexical__li {
-    margin: 2px 0;
-}
-
-.lexical__link {
-    color: #3c8dbc;
-    text-decoration: underline;
 }
 
 /* Embedded <iframe> (the `iframe` toolbar button). The wrapper is the block Lexical
@@ -125,13 +159,13 @@
 .lexical__iframe iframe {
     max-width: 100%;
     border: 0;
-    outline: 1px dashed #d2d6de;
-    background: #f7f7f7;
+    outline: 1px dashed var(--lexical-border-color);
+    background: var(--lexical-toolbar-bg);
     pointer-events: none;
 }
 
 .lexical__iframe.is-selected iframe {
-    outline: 2px solid #3c8dbc;
+    outline: 2px solid var(--lexical-accent);
 }
 
 .lexical__bold {
@@ -175,14 +209,14 @@
        against any global `* { margin: 0 }` reset that might leak in. */
     margin: auto;
     padding: 0;
-    border: 1px solid #d2d6de;
-    background: #fff;
-    color: #333;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--lexical-border-color);
+    background: var(--lexical-bg);
+    color: var(--lexical-color);
+    box-shadow: var(--lexical-dialog-shadow);
 }
 
 .lexical__dialog::backdrop {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--lexical-backdrop);
 }
 
 .lexical__dialog-body {
@@ -217,14 +251,15 @@
 
 .lexical__dialog-input {
     padding: 6px 10px;
-    border: 1px solid #d2d6de;
-    background: #fff;
+    border: 1px solid var(--lexical-border-color);
+    background: var(--lexical-bg);
+    color: var(--lexical-color);
     font-size: 14px;
     font-weight: 400;
 }
 
 .lexical__dialog-input:focus {
-    border-color: #3c8dbc;
+    border-color: var(--lexical-accent);
     outline: none;
 }
 
@@ -252,10 +287,10 @@
 .lexical__dialog-textarea {
     min-height: 180px;
     padding: 6px 10px;
-    border: 1px solid #d2d6de;
-    background: #fff;
-    color: #333;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 1px solid var(--lexical-border-color);
+    background: var(--lexical-bg);
+    color: var(--lexical-color);
+    font-family: var(--lexical-font-mono);
     font-size: 13px;
     font-weight: 400;
     line-height: 1.5;
@@ -263,7 +298,7 @@
 }
 
 .lexical__dialog-textarea:focus {
-    border-color: #3c8dbc;
+    border-color: var(--lexical-accent);
     outline: none;
 }
 
@@ -275,23 +310,23 @@
 
 .lexical__dialog-btn {
     padding: 6px 14px;
-    border: 1px solid #d2d6de;
-    background: #f4f4f4;
-    color: #333;
+    border: 1px solid var(--lexical-border-color);
+    background: var(--lexical-toolbar-bg);
+    color: var(--lexical-color);
     font-size: 13px;
     cursor: pointer;
 }
 
 .lexical__dialog-btn:hover {
-    background: #e7e7e7;
+    background: var(--lexical-button-hover-bg);
 }
 
 .lexical__dialog-btn--primary {
-    border-color: #367fa9;
-    background: #3c8dbc;
-    color: #fff;
+    border-color: var(--lexical-accent-dark);
+    background: var(--lexical-accent);
+    color: var(--lexical-accent-contrast);
 }
 
 .lexical__dialog-btn--primary:hover {
-    background: #367fa9;
+    background: var(--lexical-accent-dark);
 }

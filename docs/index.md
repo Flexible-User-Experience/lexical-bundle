@@ -13,7 +13,9 @@ Stimulus and UX Icons, and it stores plain HTML.
   - [The icons](#the-icons)
   - [The styles](#the-styles)
   - [Translations](#translations)
+- [Rendering stored content](#rendering-stored-content)
 - [Security notes](#security-notes)
+- [Testing the bundle](#testing-the-bundle)
 - [Troubleshooting](#troubleshooting)
 
 ## Installation & setup
@@ -24,8 +26,11 @@ See the [README](../README.md) for the full steps. In short:
 composer require flexible-ux/lexical-bundle
 ```
 
-With Symfony Flex this also adds the Lexical packages to `importmap.php` and enables the `lexical`
-controller in `assets/controllers.json`. Without Flex, do both manually:
+With Symfony Flex this is all: the bundle is registered in `config/bundles.php`, the Lexical packages
+are added to `importmap.php` and the `lexical` controller is enabled in `assets/controllers.json`.
+The recipe kept in [`recipe/`](../recipe/) (submitted to symfony/recipes-contrib) also drops a
+commented `config/packages/flexible_ux_lexical.yaml` in place; until it is merged Flex's auto-generated
+recipe registers the bundle and nothing else. Without Flex, do the three steps manually:
 
 ```console
 php bin/console importmap:require lexical@^0.53.0 @lexical/extension@^0.53.0 @lexical/rich-text@^0.53.0 @lexical/html@^0.53.0 @lexical/clipboard@^0.53.0 @lexical/list@^0.53.0 @lexical/link@^0.53.0 @lexical/history@^0.53.0 @lexical/utils@^0.53.0
@@ -41,9 +46,8 @@ php bin/console importmap:require lexical@^0.53.0 @lexical/extension@^0.53.0 @le
 }
 ```
 
-Then register the bundle in `config/bundles.php` (no Flex recipe is shipped yet):
-
 ```php
+// config/bundles.php
 FlexibleUx\LexicalBundle\FlexibleUxLexicalBundle::class => ['all' => true],
 ```
 
@@ -69,14 +73,24 @@ to a `string`/`text` property like any textarea.
 
 | Option                 | Type       | Default                           | Description                               |
 |------------------------|------------|-----------------------------------|-------------------------------------------|
-| `toolbar`              | `string[]` | all 25 buttons, in eight groups   | Ordered entries: button names and `\|` separators. |
-| `height`               | `string`   | `'200px'`                         | Minimum editable height (any CSS length). |
-| `allowed_link_schemes` | `string[]` | `['http','https','mailto','tel']` | URL schemes the link modal accepts.       |
+| `preset`               | `string`   | `'default'`                       | The preset the other options default to (`default`, `full`, or one the application configures). |
+| `toolbar`              | `string[]` | the preset's (`default`: 14 buttons in six groups) | Ordered entries: button names and `\|` separators. |
+| `height`               | `string`   | the preset's (`'200px'`)          | Minimum editable height (any CSS length). |
+| `allowed_link_schemes` | `string[]` | the preset's (`['http','https','mailto','tel']`) | URL schemes the link modal accepts. |
+| `allow_relative_links` | `bool`     | `true` (the bundle's `allow_relative_links` key) | Also accept `/path`, `#fragment` and `?query` links. |
+| `sanitize`             | `bool`     | `true` (the bundle's `sanitize` key) | Run a changed submission through the bundle's HTML sanitizer. |
+
+`LexicalFormType::DEFAULT_TOOLBAR` is `undo`, `redo` · `bold`, `italic`, `underline`,
+`strikethrough`, `remove-format` · `bullet`, `number` · `indent`, `outdent` · `link`, `unlink` ·
+`iframe`. `LexicalFormType::FULL_TOOLBAR` (the `full` preset) adds `cut`, `copy`, `paste`,
+`paste-word`, `subscript`, `superscript`, the four `align-*` buttons and `source`, in eight groups.
 
 `allowed_link_schemes` entries may be written with or without the trailing colon and in any case
 (`https`, `https:` and `HTTPS:` are equivalent). The list is normalised server-side and handed to the
 Stimulus controller as the `allowedLinkSchemes` value, so validation happens in the link modal before a
-link is inserted:
+link is inserted. With `allow_relative_links` (the default) a root-relative path, a fragment or a query
+passes too (`/about`, `#top`, `?page=2`; a protocol-relative `//host` does not, having no scheme to
+check), and the same switch reaches the sanitizer:
 
 ```php
 $builder->add('description', LexicalFormType::class, [
@@ -103,9 +117,12 @@ Redundant separators — leading, trailing or repeated — are dropped during op
 hand-written list can never render a stray or doubled divider. An entry that is neither a known button
 nor `|` raises an `InvalidOptionsException` naming the offending entry and listing the valid buttons.
 
-## Application-wide defaults
+## Application-wide defaults and presets
 
-All three options can be defaulted once for the whole application. Per-field options still win:
+The three options can be defaulted once for the whole application; those top-level keys are the
+`default` preset. `presets` declares named ones a field selects with `preset`; a key a preset leaves
+out falls back to the `default` preset, and `full` (every button, otherwise the defaults) is built in
+unless the application redefines it. Per-field options still win:
 
 ```yaml
 # config/packages/flexible_ux_lexical.yaml
@@ -113,11 +130,21 @@ flexible_ux_lexical:
     toolbar: ['bold', 'italic', '|', 'bullet', 'number', '|', 'link', 'unlink']
     height: '320px'
     allowed_link_schemes: ['https']
+    presets:
+        compact:
+            toolbar: ['bold', 'italic', '|', 'link', 'unlink']
+            height: '120px'
 ```
 
-The values are bound to the `flexible_ux_lexical.toolbar`, `.height` and `.allowed_link_schemes`
-container parameters and injected into the form type, so `config:dump-reference flexible_ux_lexical`
-documents them and an unknown key fails at container compile time.
+```php
+$builder->add('summary', LexicalFormType::class, ['preset' => 'compact']);
+```
+
+The resolved presets are bound to the `flexible_ux_lexical.presets` container parameter and injected
+into the form type, so `config:dump-reference flexible_ux_lexical` documents the keys, an unknown key
+fails at container compile time and so does a toolbar entry that is not a button (the error names the
+preset). The widget carries the preset name as `data-preset`, for stylesheets that want to vary by
+preset.
 
 `undo` and `redo` dispatch Lexical's `UNDO_COMMAND` / `REDO_COMMAND` and stay disabled while their
 stack is empty, exactly like the keyboard shortcuts they mirror. Their availability mirrors the
@@ -138,12 +165,16 @@ behaviour and always works. Pasted content goes through Lexical's model like any
 markup the editor cannot represent is normalised away, and links are checked against
 `allowed_link_schemes` (a disallowed scheme unwraps the link, as in the `source` modal).
 
-`paste-word` additionally scrubs the clipboard's HTML the way CKEditor's *Paste from Word* did
-before importing it: Word's conditional comments and Office-namespace elements (`<o:p>`, …) are
-dropped, and consecutive `mso-list` paragraphs — which would otherwise import as plain paragraphs
-carrying a literal "·" or "1." marker — are rebuilt as real bulleted/numbered lists. The rebuilt
-lists are flat: nesting levels are not reconstructed. Everything else Word adds (Mso classes,
-`mso-*` styles) is ignored by the model import anyway.
+Every HTML paste and drop passes through a clipboard import middleware (`@lexical/clipboard`'s
+`ClipboardImportExtension`, configured by the controller) before Lexical imports it. When the markup
+carries Office's fingerprints (an Office XML namespace, `mso-` styles, `Mso` classes, `<o:p>`) it is
+scrubbed the way CKEditor's *Paste from Word* did: conditional comments and Office-namespace elements
+are dropped, and consecutive `mso-list` paragraphs — which would otherwise import as plain paragraphs
+carrying a literal "·" or "1." marker — are rebuilt as real bulleted/numbered lists, nested as Word
+declared them (`mso-list: l0 level2 lfo1`: level 2 goes inside the level-1 item before it). Any other
+HTML passes through untouched. `paste-word` forces the clean-up for one paste, for markup the
+detection misses. Everything else Word adds (Mso classes, `mso-*` styles) is ignored by the model
+import anyway.
 
 `remove-format` strips the inline text formats (bold, italic, underline, strikethrough,
 sub/superscript and inline text styles) from the selection while leaving block structure — lists,
@@ -201,24 +232,38 @@ modal: a link whose scheme is not allowed is unwrapped (its text stays, the link
 |-------|------|----------------|
 | PHP   | `src/Form/Type/LexicalFormType.php` | Declares options, exposes `lexical_toolbar` / `lexical_height` view vars. |
 | Bundle| `src/FlexibleUxLexicalBundle.php`   | Registers the tagged service, prepends the form theme + icon set. |
-| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, the link/source/iframe `<dialog>`s. |
+| HTML  | `templates/form/lexical_widget.html.twig` | Toolbar, editable surface, validation message slot, the link/source/iframe `<dialog>`s. |
 | JS    | `assets/src/controller.js`          | Mounts Lexical, syncs the textarea, drives the toolbar. |
 | JS    | `assets/src/iframe-node.js`         | The `IframeNode` the `iframe` button inserts (import, export, preview). |
+| JS    | `assets/src/html-export.js`         | The `html.export` overrides that keep the stored HTML semantic and class-free. |
 | CSS   | `assets/styles/lexical.css`         | Editor chrome (imported by the controller). |
+| CSS   | `assets/styles/lexical-content.css` | The stored content, in the editor and on the page (imported by the controller; the page includes it too). |
+| PHP   | `src/Html/LexicalHtmlSanitizerConfigFactory.php`, `src/Html/StyleAttributeSanitizer.php` | The sanitizer configuration mirroring the editor's output. |
+| Twig  | `src/Twig/LexicalContentExtension.php`, `src/Twig/LexicalContentRuntime.php` | The `lexical_content` / `lexical_sanitize` filters. |
 | Icons | `assets/icons/*.svg`                | Lucide glyphs served as `lexical:<name>`. |
 
 The Stimulus controller reads the textarea's HTML into Lexical on `connect()` and writes HTML back
 whenever the document changes; the textarea is what the browser submits, so server-side nothing
 special is needed.
 
-Until the document changes, the textarea keeps the exact string it was rendered with, even though
-the editor would spell the same content its own way (a class on each paragraph, a span around each
-run of text, entities decoded). A form that was only opened therefore submits its stored value
-untouched, and an "unsaved changes" guard that compares the form with its initial state — Sonata
-Admin's `confirm_exit`, for one — does not take it for a modified one. An edit undone back to the
-loaded document restores that string too. The one exception is content that loses a link or an
-embed to the allowlists while loading (see [Security notes](#security-notes)): that is a change,
-and the textarea takes the editor's HTML at once.
+What the editor writes is plain, semantic HTML, the same elements its import reads back:
+`<p>`, `<h1>`-`<h6>`, `<blockquote>`, `<ul>` / `<ol>` / `<li>`, `<a href target rel title>`,
+`<strong>`, `<em>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<code>`, `<mark>`, `<br>` and the `<iframe>` of
+an embed, with alignment and indentation as the inline `text-align` and `padding-inline-start`
+styles Lexical writes. The editor's own rendering (a theme class on every block, a `<span>` around
+every run of text, `<b>` doubled over `<strong>`, `data-lexical-*` bookkeeping) never reaches the
+field: `assets/src/html-export.js` overrides the export of the text and block nodes through
+Lexical's `html.export` hook, so a stylesheet rendering the stored content has nothing
+editor-specific to know about.
+
+Until the document changes, the textarea keeps the exact string it was rendered with, even where
+the editor would spell the same content slightly differently (entities decoded, attribute quoting
+normalised). A form that was only opened therefore submits its stored value untouched, and an
+"unsaved changes" guard that compares the form with its initial state — Sonata Admin's
+`confirm_exit`, for one — does not take it for a modified one. An edit undone back to the loaded
+document restores that string too. The one exception is content that loses a link or an embed to
+the allowlists while loading (see [Security notes](#security-notes)): that is a change, and the
+textarea takes the editor's HTML at once.
 
 ## Customising
 
@@ -251,9 +296,56 @@ The toolbar uses `ux_icon('lexical:<name>')`, resolved from the icon set the bun
 
 ### The styles
 
-All chrome is class-based (`.lexical`, `.lexical__toolbar`, `.lexical__btn`, `.lexical__dialog`, …) and
-the editable height is driven by the `--lexical-min-height` CSS custom property. Override those rules in
-your own stylesheet — the bundle's CSS is plain, unscoped and low-specificity on purpose.
+All chrome is class-based (`.lexical`, `.lexical__toolbar`, `.lexical__btn`, `.lexical__dialog`, …),
+the editable height is driven by the `--lexical-min-height` custom property the form theme sets per
+field, and every colour, radius and font is a `--lexical-*` custom property declared with its default
+on `:root`:
+
+| Variable | Default | Used for |
+|----------|---------|----------|
+| `--lexical-border-color` | `#d2d6de` | borders, separators, the embed preview outline |
+| `--lexical-bg` | `#fff` | editor and dialog background |
+| `--lexical-color` | `#333` | text and button colour |
+| `--lexical-muted-color` | `#999` | the placeholder |
+| `--lexical-toolbar-bg` | `#f7f7f7` | toolbar, dialog buttons, embed preview |
+| `--lexical-button-hover-bg` | `#e7e7e7` | hovered buttons |
+| `--lexical-accent` / `--lexical-accent-dark` / `--lexical-accent-contrast` | `#3c8dbc` / `#367fa9` / `#fff` | active buttons, focus borders, the selected embed, primary dialog button |
+| `--lexical-error-color` / `--lexical-error-bg` | `#a94442` / `#fdf7f7` | the validation message and the invalid border |
+| `--lexical-radius` | `3px` | button corners |
+| `--lexical-dialog-shadow` / `--lexical-backdrop` | shadow / `rgba(0,0,0,.4)` | the modals |
+| `--lexical-font-mono` | `ui-monospace, ...` | the source modal and inline code |
+| `--lexical-content-spacing` | `8px` | block spacing of the content |
+| `--lexical-link-color` | `#3c8dbc` | links in the content |
+| `--lexical-quote-border-color` / `--lexical-quote-color` | `#d2d6de` / `#555` | blockquotes |
+| `--lexical-code-bg` / `--lexical-mark-bg` | `#f4f4f4` / `#fff3a8` | inline code and highlights |
+
+Redefine them on `:root`, on an ancestor of the field or inside a `prefers-color-scheme: dark` media
+query (the bundle ships no dark theme of its own); the content variables apply to the editor's
+surface and to `.lexical-content` on the page alike. The rules themselves keep class specificity on
+purpose: a global reset (`ul { list-style: none }`) never wins over them, while an application rule of
+the same shape (`.lexical-content ul`) loaded later does.
+
+### Extending the editor from your own code
+
+The controller dispatches three events on the field's wrapper, bubbling, named the way Symfony UX
+controllers name their extension points:
+
+- `lexical:pre-connect` with `detail.config`, the object handed to Lexical's `defineExtension()` for
+  this editor: `nodes` (push your own `LexicalNode` classes), `dependencies` (push Lexical
+  extensions, built with `defineExtension` / `configExtension`), `theme` (a copy of the bundle's,
+  add classes), `html.export` (a `Map` of export overrides), `editable`, `onError`. Whatever the
+  listener changes is what the editor is built from.
+- `lexical:connect` with `detail.editor` once the editor holds the stored document: register
+  commands, node transforms, update listeners; keep the disposers.
+- `lexical:disconnect` with `detail.editor` right before it is disposed: call the disposers. Stimulus
+  disconnects a controller after its element left the document (a Turbo visit, a removed row), and
+  an event dispatched on a detached element reaches no `document` listener, so in that case the
+  event is dispatched on `document` instead; every event carries `detail.element`, the wrapper, for
+  listeners that need to tell editors apart.
+
+Listen on `document` in `assets/app.js` for every editor, or from a Stimulus controller of your own
+for one of them (the README has a complete example). The bundle's own features are built with the
+same hooks, which is the point: there is nothing a listener cannot reach that the controller can.
 
 ### Translations
 
@@ -263,10 +355,63 @@ French, Italian and Portuguese ship with the bundle). Add or override a locale b
 `dialog.link.*`, `dialog.source.*`, `dialog.iframe.*`, `dialog.cancel`, `dialog.confirm`,
 `error.invalid_url`, `error.invalid_embed_url`, `error.invalid_embed_size`, `error.clipboard_denied`.
 
+## Validation and accessibility
+
+The hidden textarea is still the form control: `required` (Symfony's default), `disabled`,
+`readonly` and the `placeholder` of `attr` all land on it as for a plain `TextareaType`. The
+controller mirrors onto the editing surface what the user actually works with:
+
+- **Required.** An empty required field is stopped by the browser's own form validation, as any
+  textarea would be. The browser cannot show its message by a `display: none` control, so the
+  controller listens to the textarea's `invalid` event, shows the browser's message (already in the
+  page's language) in a `role="alert"` element under the editor, sets `aria-invalid="true"` on the
+  surface and focuses the editor when it is the first invalid control of the form. The first change
+  to the document clears the message. `form.checkValidity()` and `form.reportValidity()` keep
+  working through the textarea.
+- **Placeholder.** The textarea's `placeholder` is shown in the editor while the document is empty
+  (`lexical--empty` on the wrapper, drawn by a `::before` pseudo-element, so Lexical never sees it).
+- **Accessible name.** The field's `<label>` gets an id if it has none and the surface points at it
+  with `aria-labelledby`; a click on the label focuses the editor. `aria-label` and
+  `aria-describedby` set on the textarea are mirrored as well, `aria-required` follows the option,
+  and the toggle buttons of the toolbar (text formats, alignment, lists, link, iframe) expose
+  `aria-pressed`.
+
+## Rendering stored content
+
+```twig
+{{ post.body|lexical_content }}          {# <div class="lexical-content">...sanitised HTML...</div> #}
+{{ post.body|lexical_content('prose') }} {# another container class #}
+{{ post.body|lexical_sanitize }}         {# sanitised, no container #}
+```
+
+Both filters are marked safe for HTML; the sanitizer is what makes them safe. It is Symfony's
+HtmlSanitizer configured by `FlexibleUx\LexicalBundle\Html\LexicalHtmlSanitizerConfigFactory` to
+mirror the editor's output (`ALLOWED_ELEMENTS`, with their attributes): links may use the union of
+every preset's `allowed_link_schemes`, frame sources `http(s)` or a relative URL, inline styles are
+cut down declaration by declaration by `StyleAttributeSanitizer` (`text-align` and
+`padding-inline-start` on blocks, text styles on `<span>`), the common wrappers of other editors
+(`BLOCKED_ELEMENTS`: `div`, `section`, a table and its cells, `font`, ...) lose their tag but keep
+their text, and everything else - scripts, styles, forms, media, unknown elements - is dropped with
+its content. There is no input
+length limit (Symfony's default would truncate a body at 20 000 characters). The service is
+`flexible_ux_lexical.html_sanitizer`, autowirable as `HtmlSanitizerInterface $lexicalHtmlSanitizer`.
+
+`lexical-content.css` styles the container: paragraphs, lists, links, quotes, embeds. Include it on
+the pages that render content (`import '@flexible-ux/lexical-bundle/styles/lexical-content.css'`
+from `assets/app.js`, or an `asset()` link). The editor's surface carries the same class and imports
+the same file, so the editor shows what the page will show; override `.lexical-content` rules in
+your own stylesheet to change both at once.
+
+The same sanitizer is applied on the way in. With `sanitize` on (the default, per field or through
+the bundle's `sanitize` key), a `PRE_SUBMIT` listener sanitises what the field receives - except a
+submission equal to the string the field was rendered with, which is the application's own data
+and may hold markup from elsewhere that the editor would strip; an untouched field never loses it.
+
 ## Security notes
 
 - The editor only produces links whose scheme is listed in `allowed_link_schemes` (by default `http`,
-  `https`, `mailto` and `tel`). Anything else — notably `javascript:` and `data:` — is rejected in the
+  `https`, `mailto` and `tel`), plus root-relative, fragment and query links while
+  `allow_relative_links` is on. Anything else — notably `javascript:` and `data:` — is rejected in the
   link modal, and everywhere else the allowlist is enforced by a Lexical node transform: whichever way
   a link enters the document — the `source` modal, the `paste` / `paste-word` buttons, a native
   Ctrl+V paste, drag-and-drop, or the initial load of already-stored content — a link whose scheme is
@@ -284,8 +429,25 @@ French, Italian and Portuguese ship with the bundle). Add or override a locale b
   round-tripping stored content through the editor cannot silently widen what an embed may do. The
   editor does not add one to the exported markup: sandboxing new embeds is the frontend's call, not
   the editor's.
-- The field stores HTML. If that HTML is later rendered as raw markup, treat it as trusted content and
-  sanitise anything that can reach the field from outside this editor.
+- The field stores HTML. Render it with `lexical_content` (or `lexical_sanitize`), which sanitises
+  with the editor's own allowlist; with `|raw` you are trusting whatever reached the field. On the
+  way in, the `sanitize` option (default on) applies the same allowlist to every changed submission,
+  so a client bypassing the editor cannot store what the editor would not have produced.
+
+## Testing the bundle
+
+`vendor/bin/phpunit` runs the unit and integration tests (the `default` suite: the form type, the
+bundle configuration, the sanitizer, the Twig filters and the rendered form theme). The `browser`
+suite (`vendor/bin/phpunit --testsuite browser`) drives the editor in a headless Chrome through
+Symfony Panther, against `tests/Browser/Harness`: a kernel that consumes the bundle like an
+application does, with AssetMapper serving the bundle's working tree, `build.php` doing the
+`importmap:require` of the Lexical packages at the constraint of `assets/package.json`, and a
+fixture page whose field options come from the query string (`?preset=full`, `?value=`,
+`?placeholder=...`, `?allow_relative_links=0`, ...). See `tests/Browser/README.md` for the setup
+(a chromedriver from `vendor/bin/bdi detect drivers`) and `.github/workflows/ci.yaml` for how CI
+runs both suites. A Lexical bump is verified by rebuilding the harness at the new constraint and
+running the browser suite; `.github/workflows/lexical-version-check.yaml` fails weekly when a
+release outside the constraint is out.
 
 ## Troubleshooting
 

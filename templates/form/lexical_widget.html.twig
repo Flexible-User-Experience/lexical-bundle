@@ -40,13 +40,16 @@
         source: { icon: 'file-code-corner', label: 'toolbar.source' },
     } -%}
     {%- set lexical_sep = lexical_separator|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::SEPARATOR')) -%}
-    <div class="lexical"
+    {#- The boolean value below is not written with `|default(true)`: Twig's default filter treats an
+        explicit false as "empty" and would hand the controller true. -#}
+    <div class="lexical" data-preset="{{ lexical_preset|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_PRESET')) }}"
          {{ stimulus_controller('lexical', {
              invalidUrlMessage: 'error.invalid_url'|trans({}, 'FlexibleUxLexical'),
              invalidEmbedUrlMessage: 'error.invalid_embed_url'|trans({}, 'FlexibleUxLexical'),
              invalidEmbedSizeMessage: 'error.invalid_embed_size'|trans({}, 'FlexibleUxLexical'),
              clipboardDeniedMessage: 'error.clipboard_denied'|trans({}, 'FlexibleUxLexical'),
              allowedLinkSchemes: lexical_allowed_link_schemes|default([]),
+             allowRelativeLinks: lexical_allow_relative_links is defined ? lexical_allow_relative_links : true,
          }) }}
          style="--lexical-min-height: {{ lexical_height|default(constant('FlexibleUx\\LexicalBundle\\Form\\Type\\LexicalFormType::DEFAULT_HEIGHT')) }};">
         <div class="lexical__toolbar" role="toolbar" aria-label="{{ 'toolbar.label'|trans({}, 'FlexibleUxLexical') }}">
@@ -70,8 +73,13 @@
                 {%- endif -%}
             {%- endfor -%}
         </div>
-        <div class="lexical__editable" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
+        {#- `lexical-content` is the class the rendered page wraps stored content in (see the
+            lexical_content filter), so the surface and the page share one content stylesheet. -#}
+        <div class="lexical__editable lexical-content" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true"
              {{ stimulus_target('lexical', 'editable')|stimulus_action('lexical', 'markChanged', 'focusout') }}></div>
+        {#- The browser's validation message for the (hidden, hence unfocusable) textarea, shown by
+            the controller when the form is submitted with an empty required field. -#}
+        <p class="lexical__error" role="alert" hidden {{ stimulus_target('lexical', 'error') }}></p>
         {%- set attr = attr|merge(stimulus_target('lexical', 'input').toArray()) -%}
         {{- block('textarea_widget') -}}
         {#- Native <dialog> link modal. Kept self-contained (plain buttons + Enter to
@@ -82,7 +90,9 @@
             <div class="lexical__dialog-body">
                 <label class="lexical__dialog-label">
                     {{ 'dialog.link.url_label'|trans({}, 'FlexibleUxLexical') }}
-                    <input type="url" class="lexical__dialog-input" placeholder="https://" autofocus
+                    {#- A text input, not type="url": a root-relative path or a fragment is a legitimate
+                        link, and the controller validates against the allowlist anyway. -#}
+                    <input type="text" inputmode="url" class="lexical__dialog-input" placeholder="https://" autofocus
                            {{ stimulus_target('lexical', 'urlInput')|stimulus_action('lexical', 'dialogKeydown', 'keydown') }}>
                 </label>
                 <label class="lexical__dialog-check">

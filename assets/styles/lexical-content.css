@@ -1,0 +1,91 @@
+/* Styles for the HTML a LexicalFormType field stores, wherever it is rendered: on the public
+   page, wrapped in `.lexical-content` (the `lexical_content` Twig filter does that), and inside
+   the editor, whose editable surface carries the same class, so what is being edited looks like
+   what will be shown. Every rule is `.lexical-content <element>`: specific enough to survive a
+   global reset (a `ul { list-style: none }` preflight, say), easy for an application stylesheet
+   to override with its own `.lexical-content` rules. The frontend includes this file itself (see
+   docs/index.md); the editor's controller imports it along with lexical.css.
+
+   The content's colours and spacing are custom properties with the defaults below, so a
+   stylesheet restyles the content (in the editor and on the page at once) by redefining them
+   on :root, on a `.lexical-content` ancestor or inside a dark-mode media query. */
+
+:root {
+    --lexical-content-spacing: 8px;
+    --lexical-link-color: #3c8dbc;
+    --lexical-quote-border-color: #d2d6de;
+    --lexical-quote-color: #555;
+    --lexical-code-bg: #f4f4f4;
+    --lexical-mark-bg: #fff3a8;
+    --lexical-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.lexical-content p,
+.lexical-content blockquote,
+.lexical-content h1,
+.lexical-content h2,
+.lexical-content h3,
+.lexical-content h4,
+.lexical-content h5,
+.lexical-content h6 {
+    margin: 0 0 var(--lexical-content-spacing);
+}
+
+.lexical-content ul,
+.lexical-content ol {
+    margin: 0 0 var(--lexical-content-spacing) 1.5em;
+    padding: 0;
+}
+
+.lexical-content ul {
+    list-style: disc;
+}
+
+.lexical-content ol {
+    list-style: decimal;
+}
+
+.lexical-content li {
+    margin: 2px 0;
+}
+
+/* A nested list sits inside its parent item, flush with the item's text. */
+.lexical-content li > ul,
+.lexical-content li > ol {
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+.lexical-content blockquote {
+    padding-left: 1em;
+    border-left: 3px solid var(--lexical-quote-border-color);
+    color: var(--lexical-quote-color);
+}
+
+.lexical-content a {
+    color: var(--lexical-link-color);
+    text-decoration: underline;
+}
+
+.lexical-content sub,
+.lexical-content sup {
+    font-size: 0.8em;
+}
+
+.lexical-content code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--lexical-code-bg);
+    font-family: var(--lexical-font-mono);
+    font-size: 0.9em;
+}
+
+.lexical-content mark {
+    background: var(--lexical-mark-bg);
+}
+
+/* An embed never overflows the column it is rendered in. */
+.lexical-content iframe {
+    max-width: 100%;
+    border: 0;
+}

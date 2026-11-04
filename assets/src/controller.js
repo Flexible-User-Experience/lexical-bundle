@@ -1,4 +1,5 @@
 import '../styles/lexical.css';
+import '../styles/lexical-content.css';
 
 import { Controller } from '@hotwired/stimulus';
 import {
@@ -35,7 +36,7 @@ import {
 } from '@lexical/extension';
 import { registerRichText, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
-import { $insertDataTransferForRichText } from '@lexical/clipboard';
+import { $insertDataTransferForRichText, ClipboardImportExtension } from '@lexical/clipboard';
 import {
     ListNode,
     ListItemNode,
@@ -60,11 +61,16 @@ import {
 // so the path is rewritten to the digested one. Bare imports are unaffected: they resolve
 // through the importmap by name, whatever their clause looks like.
 import * as iframeNodeModule from './iframe-node.js';
+import * as htmlExportModule from './html-export.js';
 
 const { IframeNode, $createIframeNode, $isIframeNode } = iframeNodeModule;
+const { createHtmlExport } = htmlExportModule;
 
-// Lexical node → CSS class map. The classes themselves live in
-// ../styles/lexical.css, keeping this file behaviour-only.
+// Lexical node → CSS class map. The text-format and embed classes live in
+// ../styles/lexical.css; the block classes stay for stylesheets that target the editor's own
+// DOM, while the blocks themselves are styled through lexical-content.css, which the
+// editable surface shares with the rendered page (see the form theme). This file stays
+// behaviour-only.
 const THEME = {
     paragraph: 'lexical__p',
     text: {
@@ -118,6 +124,12 @@ const ALIGN_FORMATS = {
     'align-justify': 'justify',
 };
 
+// The toolbar buttons whose pressed state the toolbar reflects (and announces through
+// aria-pressed): the text formats, the alignments, the two list types, link and iframe.
+const TOGGLE_COMMANDS = new Set([
+    ...TEXT_FORMATS, ...Object.keys(ALIGN_FORMATS), 'bullet', 'number', 'link', 'iframe',
+]);
+
 // Fallback for the `allowedLinkSchemes` value, used when a custom form theme does not
 // pass the attribute. Mirrors LexicalFormType::DEFAULT_ALLOWED_LINK_SCHEMES. Whatever the
 // list, anything outside it — notably `javascript:` and `data:` — is rejected, so stored
@@ -144,7 +156,7 @@ const EMBED_SIZE_PATTERN = /^\d+(\.\d+)?%?$/;
  */
 export default class extends Controller {
     static targets = [
-        'input', 'editable', 'button',
+        'input', 'editable', 'button', 'error',
         'dialog', 'urlInput', 'newTab',
         'sourceDialog', 'sourceInput',
         'iframeDialog', 'iframeUrlInput', 'iframeWidthInput', 'iframeHeightInput', 'iframeTitleInput',
@@ -156,15 +168,30 @@ export default class extends Controller {
         invalidEmbedSizeMessage: String,
         clipboardDeniedMessage: String,
         allowedLinkSchemes: { type: Array, default: DEFAULT_ALLOWED_LINK_SCHEMES },
+        allowRelativeLinks: { type: Boolean, default: true },
     };
 
     connect() {
         this.#createEditor();
+        this.#wireField();
         this.element.classList.add('lexical--ready');
+        // The editor is up and holds the stored document: the moment for an application
+        // controller to register its own commands, transforms or listeners on it.
+        this.dispatch('connect', { detail: { editor: this.editor, element: this.element } });
     }
 
     disconnect() {
-        this.element.classList.remove('lexical--ready');
+        this.element.classList.remove('lexical--ready', 'lexical--empty', 'lexical--invalid');
+        this.#unwireField();
+        if (this.editor) {
+            // Still a live editor here, so whatever `lexical:connect` registered can be torn
+            // down. Stimulus disconnects a controller after its element left the document
+            // (a Turbo visit, a removed form row), and an event dispatched on a detached
+            // element reaches no `document` listener - so it goes to `document` directly
+            // then, with the element in the detail for listeners that filter by it.
+            const detail = { editor: this.editor, element: this.element };
+            this.dispatch('disconnect', this.element.isConnected ? { detail } : { detail, target: document });
+        }
         if (this.teardown) {
             this.teardown();
             this.teardown = null;
@@ -177,6 +204,31 @@ export default class extends Controller {
             this.editor = null;
         }
     }
+
+    // --- Form field semantics ----------------------------------------------
+
+    // The browser found the textarea invalid (`required` and empty) while validating the
+    // form. Its own message needs a focusable control to hang from, and the textarea is
+    // display:none once the editor is up, so without this the submission just stops, with
+    // nothing on screen and "An invalid form control is not focusable" in the console. Show
+    // the browser's message (already in the page's language) by the editor instead, and take
+    // the focus when this is the first invalid control of the form, as the browser would.
+    onInvalid = (event) => {
+        event.preventDefault();
+        const input = this.inputTarget;
+        this.#setInvalid(input.validationMessage);
+        const form = input.form;
+        const firstInvalid = form ? form.querySelector('input:invalid, select:invalid, textarea:invalid') : input;
+        if (firstInvalid === input) {
+            this.editor.focus();
+        }
+    };
+
+    // A label click focuses its control; ours is hidden, so send the focus to the editor.
+    onLabelClick = (event) => {
+        event.preventDefault();
+        this.editor.focus();
+    };
 
     // --- Toolbar actions (bound in the form theme via data-action) ---------
 
@@ -248,11 +300,18 @@ export default class extends Controller {
     // A URL is safe when it parses and its scheme is in the configured allowlist (the
     // `allowed_link_schemes` form option). The URL constructor normalises the scheme (so
     // HTTPS:// passes) and throws on malformed input, so this also rejects
-    // javascript:/data: and anything that is not a real absolute URL.
+    // javascript:/data: and anything that is not a real absolute URL. A root-relative path
+    // (`/about`), a fragment (`#top`) or a query (`?page=2`) stays on the site and is allowed
+    // too unless `allow_relative_links` is off; a protocol-relative `//host` is none of these
+    // and fails the scheme check, having no scheme to check.
     #isSafeUrl(value) {
+        const url = String(value).trim();
+        if (this.allowRelativeLinksValue && /^(\/(?!\/)|#|\?)/.test(url)) {
+            return true;
+        }
         let protocol;
         try {
-            protocol = new URL(value).protocol.toLowerCase();
+            protocol = new URL(url).protocol.toLowerCase();
         } catch {
             return false;
         }
@@ -415,17 +474,40 @@ export default class extends Controller {
         // extensions exist too, but each carries behaviour of its own (RichTextExtension
         // mounts an aria-live region for heading announcements, for one), so adopting
         // them is a separate decision from retiring a deprecated command.
-        const editor = buildEditorFromExtensions(
-            defineExtension({
-                name: '@flexible-ux/lexical-bundle',
-                namespace: 'lexical',
-                editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
-                nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
-                theme: THEME,
-                onError: (error) => console.error('[lexical]', error),
-                dependencies: [configExtension(HistoryExtension, { delay: 300 })],
-            }),
-        );
+        const config = {
+            name: '@flexible-ux/lexical-bundle',
+            namespace: 'lexical',
+            editable: !this.inputTarget.disabled && !this.inputTarget.readOnly,
+            nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, IframeNode],
+            // A copy: a listener of `lexical:pre-connect` may add to it for this editor only.
+            theme: { ...THEME, text: { ...THEME.text }, list: { ...THEME.list } },
+            // The field stores semantic HTML without the editor's theme classes and
+            // spans; see html-export.js. Import stays Lexical's own.
+            html: { export: createHtmlExport() },
+            onError: (error) => console.error('[lexical]', error),
+            dependencies: [
+                configExtension(HistoryExtension, { delay: 300 }),
+                // Every HTML paste and drop passes through this middleware before Lexical
+                // imports it, whatever handler triggered the import (Ctrl+V, the toolbar
+                // buttons, a drop): markup from Word, Outlook or Google Docs is cleaned on
+                // its way in, so pasting from Word just works and the paste-word button is
+                // only a way to force the cleaning. `$next(html)` hands the (possibly
+                // rewritten) HTML to Lexical's own import with the same selection.
+                configExtension(ClipboardImportExtension, {
+                    $importMimeType: {
+                        'text/html': [(html, selection, $next) => $next(this.#preparePastedHtml(html))],
+                    },
+                }),
+            ],
+        };
+        // The Symfony UX way of extending a controller: an application controller listening
+        // to `lexical:pre-connect` (on the element or on `document`) gets the extension
+        // config before the editor exists and may push its own nodes and Lexical
+        // extensions, add theme classes or swap an HTML export - the same hooks this
+        // controller uses itself, with no need to replace it.
+        this.dispatch('pre-connect', { detail: { config, element: this.element } });
+
+        const editor = buildEditorFromExtensions(defineExtension(config));
         this.editor = editor;
         editor.setRootElement(this.editableTarget);
 
@@ -526,6 +608,7 @@ export default class extends Controller {
             editor.registerUpdateListener(({ editorState }) => {
                 this.#syncOut(editorState);
                 this.#refreshToolbar(editorState);
+                this.#refreshEmpty(editorState);
             }),
         );
 
@@ -597,18 +680,89 @@ export default class extends Controller {
             return;
         }
         this.inputTarget.value = value;
+        this.#clearInvalid();
         this.inputTarget.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // The document as the HTML the field stores.
     #readHtml(editorState) {
-        return editorState.read(() => {
-            // Embeds carry no text, so a document holding nothing but one is empty by the
-            // text-content measure — and would be saved as an empty string.
-            const isEmpty = '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
+        return editorState.read(() => (this.#isEmpty() ? '' : $generateHtmlFromNodes(this.editor, null)));
+    }
 
-            return isEmpty ? '' : $generateHtmlFromNodes(this.editor, null);
+    // Whether the document holds nothing worth saving. Embeds carry no text, so a document
+    // holding nothing but one is empty by the text-content measure alone — and would be
+    // saved as an empty string. Must run inside a read()/update() scope.
+    #isEmpty() {
+        return '' === $getRoot().getTextContent().trim() && 0 === $nodesOfType(IframeNode).length;
+    }
+
+    // The placeholder (the textarea's, mirrored onto the editable by #wireField) shows while
+    // the document is empty; the stylesheet keys it off this class.
+    #refreshEmpty(editorState) {
+        this.element.classList.toggle('lexical--empty', editorState.read(() => this.#isEmpty()));
+    }
+
+    // --- Form field semantics ----------------------------------------------
+
+    // Mirror the textarea's form semantics onto the editable surface, which is what the user
+    // — and their assistive technology — actually works with: once the editor is up the
+    // textarea is display:none, so by itself the surface has no accessible name, no
+    // `required` state and no placeholder, and a click on the field's label goes nowhere.
+    #wireField() {
+        const input = this.inputTarget;
+        const editable = this.editableTarget;
+        editable.setAttribute('aria-required', String(input.required));
+        editable.setAttribute('aria-invalid', 'false');
+        const placeholder = input.getAttribute('placeholder');
+        if (placeholder) {
+            editable.dataset.placeholder = placeholder;
+        }
+        ['aria-label', 'aria-describedby'].forEach((name) => {
+            if (input.hasAttribute(name)) {
+                editable.setAttribute(name, input.getAttribute(name));
+            }
         });
+        this.label = input.labels?.[0] ?? null;
+        if (this.label) {
+            if (!this.label.id) {
+                this.label.id = `${input.id || 'lexical'}_label`;
+            }
+            editable.setAttribute('aria-labelledby', this.label.id);
+            this.label.addEventListener('click', this.onLabelClick);
+        }
+        input.addEventListener('invalid', this.onInvalid);
+    }
+
+    #unwireField() {
+        this.inputTarget.removeEventListener('invalid', this.onInvalid);
+        if (this.label) {
+            this.label.removeEventListener('click', this.onLabelClick);
+            this.label = null;
+        }
+    }
+
+    #setInvalid(message) {
+        this.element.classList.add('lexical--invalid');
+        this.editableTarget.setAttribute('aria-invalid', 'true');
+        if (this.hasErrorTarget) {
+            this.errorTarget.textContent = message;
+            this.errorTarget.hidden = false;
+        }
+    }
+
+    // Every change to the value clears the message: the browser re-validates on the next
+    // submission anyway, and a message about the field being empty must not outlive the
+    // first keystroke.
+    #clearInvalid() {
+        if (!this.element.classList.contains('lexical--invalid')) {
+            return;
+        }
+        this.element.classList.remove('lexical--invalid');
+        this.editableTarget.setAttribute('aria-invalid', 'false');
+        if (this.hasErrorTarget) {
+            this.errorTarget.hidden = true;
+            this.errorTarget.textContent = '';
+        }
     }
 
     // --- Toolbar operations ------------------------------------------------
@@ -727,10 +881,11 @@ export default class extends Controller {
         });
     }
 
-    // Paste the system clipboard at the caret; `fromWord` scrubs Word's markup first.
-    // Either way the content goes through Lexical's model like any paste (markup the
-    // model cannot represent is dropped) and, like every path into the document, links
-    // whose scheme is not allowed are unwrapped by the LinkNode transform.
+    // Paste the system clipboard at the caret; `fromWord` forces the Office clean-up that
+    // otherwise only runs when the markup looks like Office's. Either way the content goes
+    // through the clipboard middleware and Lexical's model like any paste (markup the model
+    // cannot represent is dropped) and, like every path into the document, links whose
+    // scheme is not allowed are unwrapped by the LinkNode transform.
     async #paste(fromWord) {
         const dataTransfer = await this.#readClipboard();
         if (null === dataTransfer) {
@@ -738,21 +893,38 @@ export default class extends Controller {
 
             return;
         }
-        if (fromWord) {
-            const html = dataTransfer.getData('text/html');
-            if ('' !== html) {
-                dataTransfer.setData('text/html', this.#cleanWordHtml(html));
-            }
-        }
         // The permission prompt some browsers show for clipboard.read() may have taken
         // the focus (and with it the selection) away; restore it before inserting.
         this.editor.focus();
-        this.editor.update(() => {
-            const selection = $getSelection();
-            if ($isRangeSelection(selection)) {
-                $insertDataTransferForRichText(dataTransfer, selection, this.editor);
-            }
-        });
+        this.cleanNextPaste = fromWord;
+        try {
+            this.editor.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                    $insertDataTransferForRichText(dataTransfer, selection, this.editor);
+                }
+            });
+        } finally {
+            // A clipboard without HTML never reaches the middleware; the flag must not
+            // outlive this paste and clean the next one.
+            this.cleanNextPaste = false;
+        }
+    }
+
+    // What the clipboard middleware hands to Lexical: the pasted HTML as it is, or scrubbed
+    // of Office's markup when it carries Office's fingerprints (or the paste-word button
+    // asked for it).
+    #preparePastedHtml(html) {
+        const clean = this.cleanNextPaste || this.#isOfficeHtml(html);
+        this.cleanNextPaste = false;
+
+        return clean ? this.#cleanWordHtml(html) : html;
+    }
+
+    // Word, Outlook and the other Office apps sign their HTML: an Office XML namespace, the
+    // `mso-` style prefix, `Mso` classes or `<o:p>` paragraph marks.
+    #isOfficeHtml(html) {
+        return /urn:schemas-microsoft-com:office|\bmso-|class="?Mso|<o:p>/i.test(html);
     }
 
     // Read the system clipboard into a DataTransfer carrying the html and plain-text
@@ -813,20 +985,28 @@ export default class extends Controller {
     }
 
     // Word encodes a list item as a paragraph whose style carries `mso-list` metadata
-    // and whose visible marker ("·", "1.", …) sits in a span styled `mso-list:Ignore`.
-    // Without this, a pasted list imports as paragraphs with a literal bullet glyph in
-    // front. Each consecutive run of such paragraphs belonging to the same list — Word
-    // names the instance with the style's `lfoN` token, so two adjacent but distinct
-    // lists stay distinct — becomes one flat <ul>/<ol> (ordered when its first marker
-    // looks like "1." / "a)"), and the markers go away with the paragraphs. Nesting
-    // levels are not reconstructed.
+    // (`mso-list: l0 level2 lfo1`: the list definition, the nesting level, the list
+    // instance) and whose visible marker ("·", "1.", …) sits in a span styled
+    // `mso-list:Ignore`. Without this, a pasted list imports as paragraphs with a literal
+    // bullet glyph in front. Each consecutive run of such paragraphs belonging to the same
+    // list — Word names the instance with the `lfoN` token, so two adjacent but distinct
+    // lists stay distinct — becomes nested <ul>/<ol> elements following the declared
+    // levels (a level-2 item goes into a list inside the level-1 item before it), ordered
+    // where the first marker of that level looks like "1." / "a)", and the markers go away
+    // with the paragraphs.
     #convertWordLists(doc) {
         const isItem = (node) => null !== node && 'p' === node.localName
             && (/mso-list/i.test(node.getAttribute('style') || '') || node.className.includes('MsoListParagraph'));
         const listIdOf = (paragraph) => ((paragraph.getAttribute('style') || '').match(/lfo\d+/i) ?? ['?'])[0];
+        const levelOf = (paragraph) => Math.max(1, parseInt(((paragraph.getAttribute('style') || '').match(/level(\d+)/i) ?? [0, '1'])[1], 10) || 1);
         const markerOf = (paragraph) => [...paragraph.querySelectorAll('span')].find(
             (span) => /mso-list\s*:\s*ignore/i.test(span.getAttribute('style') || ''),
         ) ?? null;
+        const isOrdered = (paragraph) => {
+            const marker = markerOf(paragraph);
+
+            return null !== marker && /^[0-9a-z]{1,4}[.)]/i.test(marker.textContent.trim());
+        };
 
         [...doc.body.querySelectorAll('p')].forEach((paragraph) => {
             // Only the first paragraph of a run builds the list; the ones it pulls in
@@ -839,16 +1019,25 @@ export default class extends Controller {
             if (null !== previous && isItem(previous) && listIdOf(previous) === id) {
                 return;
             }
-            const marker = markerOf(paragraph);
-            const ordered = null !== marker && /^[0-9a-z]{1,4}[.)]/i.test(marker.textContent.trim());
-            const list = doc.createElement(ordered ? 'ol' : 'ul');
-            paragraph.before(list);
+            // lists[n - 1] is the open list at nesting level n.
+            const lists = [doc.createElement(isOrdered(paragraph) ? 'ol' : 'ul')];
+            paragraph.before(lists[0]);
             for (let item = paragraph; isItem(item) && listIdOf(item) === id; ) {
                 const next = item.nextElementSibling;
+                const level = levelOf(item);
+                // Back up to this item's level, then open whatever deeper lists it needs,
+                // each inside the last item of the level above (an empty item when Word
+                // skipped a level).
+                lists.length = Math.min(lists.length, level);
+                while (lists.length < level) {
+                    const parent = lists[lists.length - 1];
+                    const parentItem = parent.lastElementChild ?? parent.appendChild(doc.createElement('li'));
+                    lists.push(parentItem.appendChild(doc.createElement(isOrdered(item) ? 'ol' : 'ul')));
+                }
                 markerOf(item)?.remove();
                 const entry = doc.createElement('li');
                 entry.append(...item.childNodes);
-                list.append(entry);
+                lists[level - 1].append(entry);
                 item.remove();
                 item = next;
             }
@@ -912,6 +1101,11 @@ export default class extends Controller {
                 button.disabled = state.collapsed;
             }
             button.classList.toggle('is-active', active);
+            // Toggles expose their state to assistive technology too; one-shot buttons
+            // (undo, indent, paste, ...) are not toggles and get no aria-pressed.
+            if (TOGGLE_COMMANDS.has(command)) {
+                button.setAttribute('aria-pressed', String(active));
+            }
         });
 
         this.#refreshEmbedSelection(state.iframeKeys);

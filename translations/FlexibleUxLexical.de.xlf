@@ -160,7 +160,7 @@
             </trans-unit>
             <trans-unit id="error.invalid_url">
                 <source>error.invalid_url</source>
-                <target>Bitte eine gültige URL eingeben (http, https, mailto oder tel).</target>
+                <target>Bitte eine gültige URL (http, https, mailto oder tel) oder einen Pfad wie /ueber-uns eingeben.</target>
             </trans-unit>
             <trans-unit id="error.invalid_embed_url">
                 <source>error.invalid_embed_url</source>

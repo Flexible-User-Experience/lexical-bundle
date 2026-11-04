@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Bundle\TwigBundle\TwigBundle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 use Symfony\UX\Icons\UXIconsBundle;
@@ -103,7 +104,10 @@ final class TestKernel extends Kernel
         $container->services()
             ->alias('test.form.factory', 'form.factory')->public()
             ->alias('test.twig', 'twig')->public()
-            ->alias('test.asset_mapper', 'asset_mapper')->public();
+            ->alias('test.asset_mapper', 'asset_mapper')->public()
+            // The autowiring alias the bundle declares, which the compiler would otherwise
+            // drop as unused; the integration test checks it resolves.
+            ->alias('test.lexical_sanitizer', HtmlSanitizerInterface::class.' $lexicalHtmlSanitizer')->public();
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void

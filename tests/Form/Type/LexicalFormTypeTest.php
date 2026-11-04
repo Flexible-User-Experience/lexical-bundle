@@ -7,7 +7,11 @@ namespace FlexibleUx\LexicalBundle\Tests\Form\Type;
 use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\Forms;
+use Symfony\Component\Form\PreloadedExtension;
 use Symfony\Component\Form\Test\TypeTestCase;
+use Symfony\Component\OptionsResolver\Exception\InvalidOptionsException;
 
 /**
  * The attribute opts out of PHPUnit 13's expectation-less-mock notice: the mock is the
@@ -21,15 +25,14 @@ final class LexicalFormTypeTest extends TypeTestCase
     {
         $view = $this->factory->create(LexicalFormType::class)->createView();
 
+        self::assertSame('default', $view->vars['lexical_preset']);
         self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $view->vars['lexical_toolbar']);
+        // The default toolbar is the lean one: no clipboard buttons, alignment,
+        // sub/superscript or source editor until a field (or preset) asks for them.
         self::assertSame([
             'undo', 'redo',
             '|',
-            'cut', 'copy', 'paste', 'paste-word',
-            '|',
-            'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript', 'remove-format',
-            '|',
-            'align-left', 'align-center', 'align-right', 'align-justify',
+            'bold', 'italic', 'underline', 'strikethrough', 'remove-format',
             '|',
             'bullet', 'number',
             '|',
@@ -37,10 +40,101 @@ final class LexicalFormTypeTest extends TypeTestCase
             '|',
             'link', 'unlink',
             '|',
-            'iframe', 'source',
+            'iframe',
         ], $view->vars['lexical_toolbar']);
         self::assertSame('|', $view->vars['lexical_separator']);
         self::assertSame('200px', $view->vars['lexical_height']);
+    }
+
+    public function testFullPresetListsEveryButton(): void
+    {
+        $view = $this->factory->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+
+        self::assertSame('full', $view->vars['lexical_preset']);
+        self::assertSame(LexicalFormType::FULL_TOOLBAR, $view->vars['lexical_toolbar']);
+        self::assertSame(
+            LexicalFormType::AVAILABLE_BUTTONS,
+            array_values(array_filter($view->vars['lexical_toolbar'], static fn (string $entry): bool => '|' !== $entry)),
+        );
+        // The rest of the preset is the default's.
+        self::assertSame('200px', $view->vars['lexical_height']);
+        self::assertSame(['http', 'https', 'mailto', 'tel'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testUnknownPresetIsRejected(): void
+    {
+        $this->expectException(InvalidOptionsException::class);
+        $this->expectExceptionMessageMatches('/"preset"/');
+
+        $this->factory->create(LexicalFormType::class, null, ['preset' => 'nope']);
+    }
+
+    public function testConfiguredPresetSuppliesTheOptionsItSets(): void
+    {
+        $factory = $this->createFactoryWithPresets([
+            'compact' => ['toolbar' => ['bold', 'italic'], 'height' => '100px'],
+        ]);
+
+        $view = $factory->create(LexicalFormType::class, null, ['preset' => 'compact'])->createView();
+
+        self::assertSame('compact', $view->vars['lexical_preset']);
+        self::assertSame(['bold', 'italic'], $view->vars['lexical_toolbar']);
+        self::assertSame('100px', $view->vars['lexical_height']);
+        // A key the preset leaves out comes from the default preset.
+        self::assertSame(['http', 'https', 'mailto', 'tel'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testApplicationDefaultPresetFeedsTheOtherPresets(): void
+    {
+        // The application's own defaults (the top-level configuration keys) are the base
+        // every other preset, the built-in `full` included, falls back to.
+        $factory = $this->createFactoryWithPresets([
+            'default' => ['height' => '300px', 'allowed_link_schemes' => ['https']],
+            'compact' => ['toolbar' => ['bold']],
+        ]);
+
+        $compact = $factory->create(LexicalFormType::class, null, ['preset' => 'compact'])->createView();
+        self::assertSame('300px', $compact->vars['lexical_height']);
+        self::assertSame(['https'], $compact->vars['lexical_allowed_link_schemes']);
+
+        $full = $factory->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+        self::assertSame(LexicalFormType::FULL_TOOLBAR, $full->vars['lexical_toolbar']);
+        self::assertSame('300px', $full->vars['lexical_height']);
+
+        $default = $factory->create(LexicalFormType::class)->createView();
+        self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $default->vars['lexical_toolbar']);
+        self::assertSame('300px', $default->vars['lexical_height']);
+    }
+
+    public function testFieldOptionsWinOverThePreset(): void
+    {
+        $factory = $this->createFactoryWithPresets([
+            'compact' => ['toolbar' => ['bold', 'italic'], 'height' => '100px'],
+        ]);
+
+        $view = $factory->create(LexicalFormType::class, null, ['preset' => 'compact', 'height' => '150px'])->createView();
+
+        self::assertSame(['bold', 'italic'], $view->vars['lexical_toolbar']);
+        self::assertSame('150px', $view->vars['lexical_height']);
+    }
+
+    public function testApplicationCanRedefineTheFullPreset(): void
+    {
+        $factory = $this->createFactoryWithPresets(['full' => ['toolbar' => ['bold']]]);
+
+        $view = $factory->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+
+        self::assertSame(['bold'], $view->vars['lexical_toolbar']);
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $presets
+     */
+    private function createFactoryWithPresets(array $presets): FormFactoryInterface
+    {
+        return Forms::createFormFactoryBuilder()
+            ->addExtension(new PreloadedExtension([new LexicalFormType($presets)], []))
+            ->getFormFactory();
     }
 
     public function testCustomOptions(): void
@@ -138,6 +232,14 @@ final class LexicalFormTypeTest extends TypeTestCase
         ])->createView();
 
         self::assertSame(['https'], $view->vars['lexical_allowed_link_schemes']);
+    }
+
+    public function testRelativeLinksAreAllowedByDefaultAndPerField(): void
+    {
+        self::assertTrue($this->factory->create(LexicalFormType::class)->createView()->vars['lexical_allow_relative_links']);
+        self::assertFalse(
+            $this->factory->create(LexicalFormType::class, null, ['allow_relative_links' => false])->createView()->vars['lexical_allow_relative_links'],
+        );
     }
 
     public function testRejectsNonStringAllowedLinkSchemes(): void
