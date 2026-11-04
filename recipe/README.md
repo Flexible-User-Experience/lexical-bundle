@@ -2,7 +2,7 @@
 
 This directory holds the Symfony Flex recipe for the bundle, in the layout the
 [symfony/recipes-contrib](https://github.com/symfony/recipes-contrib) repository expects under
-`flexible-ux/lexical-bundle/1.0/`:
+`flexible-ux/lexical-bundle/1.1/` (the configuration keys it ships exist since bundle 1.1.0):
 
 | File | Purpose |
 |------|---------|
@@ -16,7 +16,7 @@ recipe.
 
 ## Submitting or updating it
 
-1. Fork `symfony/recipes-contrib`, copy this directory to `flexible-ux/lexical-bundle/1.0/` (the
+1. Fork `symfony/recipes-contrib`, copy this directory to `flexible-ux/lexical-bundle/1.1/` (the
    version directory is the lowest bundle version the recipe applies to).
 2. Open a pull request; the recipes bot validates the manifest and builds a `flex/pull-<n>` branch
    you can test with
