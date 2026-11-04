@@ -147,6 +147,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   steps are now documented for applications without Flex only.
 - The npm-side version in `assets/package.json`, left at 1.0.4 through the 1.0.5 tag, tracks the
   bundle version again.
+- `composer.json` declares a conflict with `masterminds/html5` below 2.8.1. On PHP 8.2 and 8.3
+  Symfony's HtmlSanitizer parses with that library (the native HTML5 parser needs PHP 8.4), and
+  2.7.x passed `null` to DOM functions on every sanitisation - a deprecation PHP has raised since
+  8.1, which the `--prefer-lowest` CI job turned into failures; 2.8.1 (May 2023) fixed it.
 
 ### Fixed
 

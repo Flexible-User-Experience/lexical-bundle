@@ -43,6 +43,9 @@
         "symfony/framework-bundle": "^7.4 || ^8.0",
         "symfony/panther": "^2.4"
     },
+    "conflict": {
+        "masterminds/html5": "<2.8.1"
+    },
     "autoload": {
         "psr-4": {
             "FlexibleUx\\LexicalBundle\\": "src/"
