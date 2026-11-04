@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace FlexibleUx\LexicalBundle\Form\Type;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Event\PreSubmitEvent;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Symfony\Component\OptionsResolver\Exception\InvalidOptionsException;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -22,6 +26,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * when JavaScript is unavailable.
  *
  * Options:
+ *  - `preset`: the name of a preset the other options default to. `default` and `full`
+ *    are built in; the application adds its own under `flexible_ux_lexical.presets`.
  *  - `toolbar`: ordered toolbar entries. Each entry is one of {@see AVAILABLE_BUTTONS},
  *    or {@see SEPARATOR} to draw a divider — grouping is therefore entirely up to the
  *    caller. Redundant separators (leading, trailing or repeated) are dropped.
@@ -29,10 +35,18 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *  - `allowed_link_schemes`: URL schemes the link modal accepts, written with or without
  *    the trailing colon. Defaults to `http`, `https`, `mailto` and `tel`; anything outside
  *    the list (notably `javascript:` and `data:`) is rejected.
+ *  - `allow_relative_links`: whether the link modal (and the import allowlist) also accept a
+ *    root-relative path (`/about`), a fragment (`#top`) or a query (`?page=2`) besides the
+ *    allowed schemes. Defaults to the bundle configuration (`true`).
+ *  - `sanitize`: whether what the field receives on submission is run through the bundle's
+ *    HTML sanitizer (the allowlist of what the editor produces), the server-side counterpart
+ *    of the editor's own checks. Defaults to the bundle configuration (`true`). A field that
+ *    submits the very string it was rendered with is left alone either way: that string is
+ *    the application's own data, not something this request produced.
  *
- * Application-wide defaults for all three come from the bundle configuration
- * (`config/packages/flexible_ux_lexical.yaml`) and are injected through the constructor;
- * per-field options always win.
+ * The presets come from the bundle configuration (`config/packages/flexible_ux_lexical.yaml`)
+ * and are injected through the constructor; an option passed to a field always wins over
+ * the preset it would otherwise take.
  */
 final class LexicalFormType extends AbstractType
 {
@@ -45,6 +59,16 @@ final class LexicalFormType extends AbstractType
      * Default minimum editable height.
      */
     public const DEFAULT_HEIGHT = '200px';
+
+    /**
+     * The preset a field uses when its `preset` option is not set.
+     */
+    public const DEFAULT_PRESET = 'default';
+
+    /**
+     * The built-in preset whose toolbar lists every button.
+     */
+    public const FULL_PRESET = 'full';
 
     /**
      * Every button the form theme knows how to render.
@@ -63,11 +87,32 @@ final class LexicalFormType extends AbstractType
     ];
 
     /**
-     * Entries used when the `toolbar` option is not overridden.
+     * The toolbar of the `default` preset: what a text field needs, nothing more. The
+     * clipboard buttons, alignment, sub/superscript and the source editor stay available
+     * to every field that lists them (or uses the `full` preset).
      *
      * @var list<string>
      */
     public const DEFAULT_TOOLBAR = [
+        'undo', 'redo',
+        self::SEPARATOR,
+        'bold', 'italic', 'underline', 'strikethrough', 'remove-format',
+        self::SEPARATOR,
+        'bullet', 'number',
+        self::SEPARATOR,
+        'indent', 'outdent',
+        self::SEPARATOR,
+        'link', 'unlink',
+        self::SEPARATOR,
+        'iframe',
+    ];
+
+    /**
+     * The toolbar of the `full` preset: every button, in nine groups.
+     *
+     * @var list<string>
+     */
+    public const FULL_TOOLBAR = [
         'undo', 'redo',
         self::SEPARATOR,
         'cut', 'copy', 'paste', 'paste-word',
@@ -93,23 +138,80 @@ final class LexicalFormType extends AbstractType
     public const DEFAULT_ALLOWED_LINK_SCHEMES = ['http', 'https', 'mailto', 'tel'];
 
     /**
-     * @param list<string> $defaultToolbar
-     * @param list<string> $defaultAllowedLinkSchemes
+     * Whether relative links are accepted when `allow_relative_links` is not overridden.
+     */
+    public const DEFAULT_ALLOW_RELATIVE_LINKS = true;
+
+    /**
+     * The option keys a preset may set.
+     *
+     * @var list<string>
+     */
+    public const PRESET_OPTIONS = ['toolbar', 'height', 'allowed_link_schemes'];
+
+    /**
+     * The resolved presets: every name maps to all three {@see PRESET_OPTIONS}.
+     *
+     * @var array<string, array{toolbar: list<string>, height: string, allowed_link_schemes: list<string>}>
+     */
+    private readonly array $presets;
+
+    /**
+     * @param array<string, array{toolbar?: list<string>, height?: string, allowed_link_schemes?: list<string>}> $presets           Presets by name; a key a preset leaves out is taken from the `default` preset,
+     *                                                                                                                             which itself falls back to the class constants. `full` is added when missing.
+     * @param HtmlSanitizerInterface|null                                                                          $sanitizer         The sanitizer behind the `sanitize` option; without one the option has no effect
+     * @param bool                                                                                                 $sanitizeByDefault The default of the `sanitize` option (the bundle's `sanitize` configuration key)
+     * @param bool                                                                                                 $allowRelativeLinksByDefault The default of the `allow_relative_links` option (the bundle's key of the same name)
      */
     public function __construct(
-        private readonly array $defaultToolbar = self::DEFAULT_TOOLBAR,
-        private readonly string $defaultHeight = self::DEFAULT_HEIGHT,
-        private readonly array $defaultAllowedLinkSchemes = self::DEFAULT_ALLOWED_LINK_SCHEMES,
+        array $presets = [],
+        private readonly ?HtmlSanitizerInterface $sanitizer = null,
+        private readonly bool $sanitizeByDefault = true,
+        private readonly bool $allowRelativeLinksByDefault = self::DEFAULT_ALLOW_RELATIVE_LINKS,
     ) {
+        $this->presets = self::resolvePresets($presets);
+    }
+
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        if (!$options['sanitize'] || null === $this->sanitizer) {
+            return;
+        }
+
+        $sanitizer = $this->sanitizer;
+        $builder->addEventListener(FormEvents::PRE_SUBMIT, static function (PreSubmitEvent $event) use ($sanitizer): void {
+            $submitted = $event->getData();
+            if (!\is_string($submitted) || '' === trim($submitted)) {
+                return;
+            }
+            // Only what this request produced is sanitised. A field that was only opened
+            // submits the string it was rendered with - the application's own data, which
+            // may legitimately hold markup the editor would never produce (content migrated
+            // from another editor, say). Stripping that from an untouched field would be
+            // silent data loss, so the stored string passes as it is.
+            $initial = $event->getForm()->getViewData();
+            if (\is_string($initial) && trim($initial) === trim($submitted)) {
+                return;
+            }
+            $event->setData($sanitizer->sanitize($submitted));
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
+        $presets = $this->presets;
         $resolver->setDefaults([
-            'toolbar' => $this->defaultToolbar,
-            'height' => $this->defaultHeight,
-            'allowed_link_schemes' => $this->defaultAllowedLinkSchemes,
+            'preset' => self::DEFAULT_PRESET,
+            'toolbar' => static fn (Options $options): array => $presets[$options['preset']]['toolbar'],
+            'height' => static fn (Options $options): string => $presets[$options['preset']]['height'],
+            'allowed_link_schemes' => static fn (Options $options): array => $presets[$options['preset']]['allowed_link_schemes'],
+            'allow_relative_links' => $this->allowRelativeLinksByDefault,
+            'sanitize' => $this->sanitizeByDefault,
         ]);
+        $resolver->setAllowedTypes('allow_relative_links', 'bool');
+        $resolver->setAllowedTypes('sanitize', 'bool');
+        $resolver->setAllowedTypes('preset', 'string');
+        $resolver->setAllowedValues('preset', array_keys($presets));
         $resolver->setAllowedTypes('toolbar', 'string[]');
         $resolver->setAllowedTypes('height', 'string');
         $resolver->setAllowedTypes('allowed_link_schemes', 'string[]');
@@ -125,10 +227,12 @@ final class LexicalFormType extends AbstractType
 
     public function buildView(FormView $view, FormInterface $form, array $options): void
     {
+        $view->vars['lexical_preset'] = $options['preset'];
         $view->vars['lexical_toolbar'] = $options['toolbar'];
         $view->vars['lexical_separator'] = self::SEPARATOR;
         $view->vars['lexical_height'] = $options['height'];
         $view->vars['lexical_allowed_link_schemes'] = $options['allowed_link_schemes'];
+        $view->vars['lexical_allow_relative_links'] = $options['allow_relative_links'];
     }
 
     public function getParent(): string
@@ -149,11 +253,16 @@ final class LexicalFormType extends AbstractType
      * Rejects unknown entries, then tidies the separators: leading, trailing and repeated
      * ones are dropped, so a hand-written list can never render a stray or doubled divider.
      *
+     * Public so the bundle extension can validate the configured presets at compile time,
+     * where a typo surfaces at the first cache warm-up rather than when a field uses the preset.
+     *
      * @param list<string> $toolbar
      *
      * @return list<string>
+     *
+     * @throws InvalidOptionsException when an entry is neither a known button nor a separator
      */
-    private static function normalizeToolbar(array $toolbar): array
+    public static function normalizeToolbar(array $toolbar): array
     {
         $unknown = array_values(array_unique(array_diff($toolbar, self::AVAILABLE_BUTTONS, [self::SEPARATOR])));
         if ([] !== $unknown) {
@@ -180,6 +289,32 @@ final class LexicalFormType extends AbstractType
         }
 
         return array_values($normalized);
+    }
+
+    /**
+     * Fills every preset up to all three options: a key a preset leaves out comes from
+     * the `default` preset, whose own gaps are the class constants, and `full` (every
+     * button, otherwise the defaults) is added unless the application defines its own.
+     *
+     * @param array<string, array<string, mixed>> $presets
+     *
+     * @return array<string, array{toolbar: list<string>, height: string, allowed_link_schemes: list<string>}>
+     */
+    private static function resolvePresets(array $presets): array
+    {
+        $default = ($presets[self::DEFAULT_PRESET] ?? []) + [
+            'toolbar' => self::DEFAULT_TOOLBAR,
+            'height' => self::DEFAULT_HEIGHT,
+            'allowed_link_schemes' => self::DEFAULT_ALLOWED_LINK_SCHEMES,
+        ];
+        $presets += [self::FULL_PRESET => ['toolbar' => self::FULL_TOOLBAR]];
+
+        $resolved = [self::DEFAULT_PRESET => $default];
+        foreach ($presets as $name => $preset) {
+            $resolved[$name] = array_intersect_key($preset + $default, $default);
+        }
+
+        return $resolved;
     }
 
     /**

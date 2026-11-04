@@ -9,7 +9,9 @@ use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
 use FlexibleUx\LexicalBundle\Tests\Fixtures\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\AssetMapper\ImportMap\JavaScriptImport;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 use Twig\Environment;
 
 /**
@@ -42,6 +44,78 @@ final class BundleIntegrationTest extends KernelTestCase
             LexicalFormType::class,
             self::getContainer()->get('flexible_ux_lexical.form.type.lexical'),
         );
+    }
+
+    public function testTheSanitizerIsExposedForAutowiring(): void
+    {
+        self::bootKernel();
+
+        $sanitizer = self::getContainer()->get('test.lexical_sanitizer');
+
+        self::assertInstanceOf(HtmlSanitizerInterface::class, $sanitizer);
+        self::assertSame('<p>Hi</p>', $sanitizer->sanitize('<p onclick="x()">Hi<script>1</script></p>'));
+    }
+
+    public function testTheContentFiltersSanitizeAndWrapStoredHtml(): void
+    {
+        self::bootKernel();
+        /** @var Environment $twig */
+        $twig = self::getContainer()->get('test.twig');
+        $stored = '<p>Hello <strong>bold</strong></p><script>alert(1)</script>';
+
+        self::assertSame(
+            '<div class="lexical-content"><p>Hello <strong>bold</strong></p></div>',
+            $twig->createTemplate('{{ html|lexical_content }}')->render(['html' => $stored]),
+        );
+        self::assertSame(
+            '<div class="prose"><p>Hello <strong>bold</strong></p></div>',
+            $twig->createTemplate("{{ html|lexical_content('prose') }}")->render(['html' => $stored]),
+        );
+        self::assertSame(
+            '<p>Hello <strong>bold</strong></p>',
+            $twig->createTemplate('{{ html|lexical_sanitize }}')->render(['html' => $stored]),
+        );
+        // Marked safe: no escaping, no |raw needed. Empty content renders an empty container.
+        self::assertSame('<div class="lexical-content"></div>', $twig->createTemplate('{{ html|lexical_content }}')->render(['html' => null]));
+    }
+
+    public function testSubmissionsAreSanitizedUnlessUnchanged(): void
+    {
+        self::bootKernel();
+        $factory = self::getContainer()->get('test.form.factory');
+        $stored = '<p>Legacy <table><tr><td>table</td></tr></table></p>';
+
+        // The stored string, submitted as it was rendered: the application's own data, left alone.
+        $untouched = $factory->create(LexicalFormType::class, $stored);
+        $untouched->submit($stored);
+        self::assertSame($stored, $untouched->getData());
+
+        // A changed submission goes through the sanitizer.
+        $edited = $factory->create(LexicalFormType::class, $stored);
+        $edited->submit('<p>Edited<script>alert(1)</script></p><p onclick="x()">more</p>');
+        self::assertSame('<p>Edited</p><p>more</p>', $edited->getData());
+
+        // Opt out per field.
+        $raw = $factory->create(LexicalFormType::class, $stored, ['sanitize' => false]);
+        $raw->submit('<p>Edited<script>alert(1)</script></p>');
+        self::assertSame('<p>Edited<script>alert(1)</script></p>', $raw->getData());
+    }
+
+    public function testSanitizingSubmissionsCanBeDisabledApplicationWide(): void
+    {
+        $kernel = new TestKernel('test', false, ['sanitize' => false]);
+        $kernel->boot();
+
+        $form = $kernel->getContainer()->get('test.form.factory')->create(LexicalFormType::class, '<p>a</p>');
+        $form->submit('<p>b<script>1</script></p>');
+        self::assertSame('<p>b<script>1</script></p>', $form->getData());
+
+        // ... and re-enabled for one field.
+        $form = $kernel->getContainer()->get('test.form.factory')->create(LexicalFormType::class, '<p>a</p>', ['sanitize' => true]);
+        $form->submit('<p>b<script>1</script></p>');
+        self::assertSame('<p>b</p>', $form->getData());
+
+        $kernel->shutdown();
     }
 
     public function testFormThemeIsPrepended(): void
@@ -90,7 +164,9 @@ final class BundleIntegrationTest extends KernelTestCase
         );
 
         self::assertContains('@flexible-ux/lexical-bundle/src/iframe-node.js', $imported);
+        self::assertContains('@flexible-ux/lexical-bundle/src/html-export.js', $imported);
         self::assertContains('@flexible-ux/lexical-bundle/styles/lexical.css', $imported);
+        self::assertContains('@flexible-ux/lexical-bundle/styles/lexical-content.css', $imported);
     }
 
     public function testWidgetRendersEditorMarkup(): void
@@ -121,6 +197,10 @@ final class BundleIntegrationTest extends KernelTestCase
         // Translated label (default locale en) and the three modals (link + source + iframe).
         self::assertStringContainsString('Bold', $html);
         self::assertStringContainsString('class="lexical__dialog"', $html);
+
+        // The slot the controller fills with the browser's validation message when the form
+        // is submitted with an empty required field (the hidden textarea cannot show it).
+        self::assertStringContainsString('<p class="lexical__error" role="alert" hidden data-lexical-target="error"></p>', $html);
         self::assertStringContainsString('data-lexical-target="sourceDialog"', $html);
         self::assertStringContainsString('data-lexical-target="iframeDialog"', $html);
 
@@ -131,9 +211,48 @@ final class BundleIntegrationTest extends KernelTestCase
         // Default link-scheme allowlist reaches the controller.
         self::assertStringContainsString('data-lexical-allowed-link-schemes-value=', $html);
         self::assertStringContainsString('["http","https","mailto","tel"]', html_entity_decode($html));
+        self::assertStringContainsString('data-lexical-allow-relative-links-value="true"', $html);
+        // The URL field is a text input: a relative path or a fragment is a legitimate link
+        // (type="url" would reject both before the controller's allowlist had a say).
+        self::assertStringContainsString('<input type="text" inputmode="url" class="lexical__dialog-input" placeholder="https://" autofocus', $html);
+        self::assertStringNotContainsString('<input type="url"', $html);
     }
 
-    public function testDefaultToolbarRendersEveryButton(): void
+    public function testRelativeLinksCanBeDisabledApplicationWide(): void
+    {
+        $kernel = new TestKernel('test', false, ['allow_relative_links' => false]);
+        $kernel->boot();
+        $container = $kernel->getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
+        self::assertFalse($view->vars['lexical_allow_relative_links']);
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+        self::assertStringContainsString('data-lexical-allow-relative-links-value="false"', $html);
+
+        // The sanitizer follows the same switch.
+        self::assertSame('<p><a>x</a></p>', $container->get('test.lexical_sanitizer')->sanitize('<p><a href="/about">x</a></p>'));
+
+        $kernel->shutdown();
+    }
+
+    public function testRequiredAndPlaceholderReachTheTextarea(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        // The controller mirrors these two textarea attributes onto the editable surface
+        // (aria-required, the placeholder) and listens to the textarea's `invalid` event, so
+        // the standard form options have to reach the textarea exactly as for TextareaType.
+        $view = $container->get('test.form.factory')
+            ->create(LexicalFormType::class, null, ['required' => true, 'attr' => ['placeholder' => 'Write something...']])
+            ->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        self::assertMatchesRegularExpression('/<textarea[^>]* required="required"[^>]*>/', $html);
+        self::assertMatchesRegularExpression('/<textarea[^>]* placeholder="Write something\.\.\."[^>]*>/', $html);
+    }
+
+    public function testDefaultToolbarRendersItsButtons(): void
     {
         self::bootKernel();
         $container = self::getContainer();
@@ -141,18 +260,94 @@ final class BundleIntegrationTest extends KernelTestCase
         $view = $container->get('test.form.factory')->create(LexicalFormType::class)->createView();
         $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
 
-        // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
-        // when an icon is missing (ignore_not_found defaults to false).
         foreach (LexicalFormType::DEFAULT_TOOLBAR as $entry) {
             if (LexicalFormType::SEPARATOR === $entry) {
                 continue;
             }
             self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
         }
+        // Nothing the lean default leaves out sneaks in.
+        foreach (['cut', 'copy', 'paste', 'paste-word', 'subscript', 'superscript', 'source'] as $entry) {
+            self::assertStringNotContainsString(\sprintf('data-command="%s"', $entry), $html);
+        }
+        self::assertStringNotContainsString('data-command="align-', $html);
 
-        // The default groups the buttons with seven separators
+        // The default groups its buttons with five separators
+        // (history · text · list · indent · link · embed).
+        self::assertSame(5, substr_count($html, 'lexical__sep'));
+        self::assertStringContainsString('class="lexical" data-preset="default"', $html);
+    }
+
+    public function testFullPresetRendersEveryButton(): void
+    {
+        self::bootKernel();
+        $container = self::getContainer();
+
+        $view = $container->get('test.form.factory')->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+        $html = $container->get('test.twig')->createTemplate('{{ form_widget(form) }}')->render(['form' => $view]);
+
+        // Rendering also proves every button's `lexical:*` icon resolves: UX Icons throws
+        // when an icon is missing (ignore_not_found defaults to false).
+        foreach (LexicalFormType::AVAILABLE_BUTTONS as $entry) {
+            self::assertStringContainsString(\sprintf('data-command="%s"', $entry), $html);
+        }
+
+        // Eight groups, seven separators
         // (history · clipboard · text · align · list · indent · link · embed + source).
         self::assertSame(7, substr_count($html, 'lexical__sep'));
+        self::assertStringContainsString('class="lexical" data-preset="full"', $html);
+    }
+
+    public function testConfiguredPresetsReachTheFormType(): void
+    {
+        // Stands in for a config/packages/flexible_ux_lexical.yaml declaring named presets.
+        $kernel = new TestKernel('test', false, [
+            'height' => '300px',
+            'presets' => [
+                'compact' => ['toolbar' => ['bold', '|', 'link'], 'height' => '120px'],
+                'strict' => ['allowed_link_schemes' => ['https']],
+            ],
+        ]);
+        $kernel->boot();
+        $factory = $kernel->getContainer()->get('test.form.factory');
+
+        $compact = $factory->create(LexicalFormType::class, null, ['preset' => 'compact'])->createView();
+        self::assertSame(['bold', '|', 'link'], $compact->vars['lexical_toolbar']);
+        self::assertSame('120px', $compact->vars['lexical_height']);
+        self::assertSame(['http', 'https', 'mailto', 'tel'], $compact->vars['lexical_allowed_link_schemes']);
+
+        // A preset only overrides what it sets; the rest comes from the application defaults.
+        $strict = $factory->create(LexicalFormType::class, null, ['preset' => 'strict'])->createView();
+        self::assertSame(LexicalFormType::DEFAULT_TOOLBAR, $strict->vars['lexical_toolbar']);
+        self::assertSame('300px', $strict->vars['lexical_height']);
+        self::assertSame(['https'], $strict->vars['lexical_allowed_link_schemes']);
+
+        // The built-in full preset inherits the application defaults too.
+        $full = $factory->create(LexicalFormType::class, null, ['preset' => 'full'])->createView();
+        self::assertSame(LexicalFormType::FULL_TOOLBAR, $full->vars['lexical_toolbar']);
+        self::assertSame('300px', $full->vars['lexical_height']);
+
+        $kernel->shutdown();
+    }
+
+    public function testDefaultPresetIsConfiguredAtTheTopLevelOnly(): void
+    {
+        $kernel = new TestKernel('test', false, ['presets' => ['default' => ['height' => '1px']]]);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessageMatches('/"default" preset is configured through the top-level/');
+
+        $kernel->boot();
+    }
+
+    public function testUnknownToolbarEntryInAPresetFailsAtBoot(): void
+    {
+        $kernel = new TestKernel('test', false, ['presets' => ['compact' => ['toolbar' => ['bold', 'blink']]]]);
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessageMatches('/"compact" preset: Unknown toolbar entry "blink"/');
+
+        $kernel->boot();
     }
 
     public function testAlignmentButtonsAreOptional(): void

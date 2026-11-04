@@ -1,0 +1,13 @@
+  * <fg=blue;options=bold>Use the editor</> in any form type:
+
+    use FlexibleUx\LexicalBundle\Form\Type\LexicalFormType;
+
+    $builder->add('body', LexicalFormType::class);
+
+  * <fg=blue;options=bold>Tune the defaults</> for the whole application in
+    <comment>config/packages/flexible_ux_lexical.yaml</> (toolbar, height, link schemes).
+
+  * The Lexical packages were added to <comment>importmap.php</> and the <comment>lexical</>
+    Stimulus controller to <comment>assets/controllers.json</>; nothing else to wire.
+
+  * Read the docs at <fg=yellow>https://github.com/Flexible-User-Experience/lexical-bundle</>
